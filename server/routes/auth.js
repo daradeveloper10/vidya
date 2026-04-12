@@ -1,5 +1,6 @@
 const express = require('express');
 const passport = require('passport');
+const jwt = require('jsonwebtoken');
 const router = express.Router();
 
 // Google OAuth routes
@@ -12,67 +13,95 @@ router.get('/google',
 router.get('/google/callback',
   passport.authenticate('google', { 
     failureRedirect: `${process.env.FRONTEND_URL}/login?error=auth_failed`,
-    session: true
+    session: false
   }),
   (req, res) => {
-    const token = Buffer.from(req.user._id.toString()).toString('base64');
+    const token = jwt.sign(
+      { 
+        id: req.user._id,
+        email: req.user.email,
+        name: req.user.name
+      },
+      process.env.JWT_SECRET,
+      { expiresIn: '7d' }
+    );
     res.redirect(`${process.env.FRONTEND_URL}/auth/callback?token=${token}`);
   }
 );
 
 // Get current user
-router.get('/me', (req, res) => {
-  if (req.isAuthenticated()) {
+router.get('/me', async (req, res) => {
+  try {
+    const authHeader = req.headers.authorization;
+    if (!authHeader || !authHeader.startsWith('Bearer ')) {
+      return res.status(401).json({ error: 'Not authenticated' });
+    }
+
+    const token = authHeader.split(' ')[1];
+    const decoded = jwt.verify(token, process.env.JWT_SECRET);
+    
+    const User = require('../models/User');
+    const user = await User.findById(decoded.id);
+    
+    if (!user) {
+      return res.status(401).json({ error: 'User not found' });
+    }
+
     res.json({ 
       user: {
-        id: req.user._id,
-        name: req.user.name,
-        email: req.user.email,
-        avatar: req.user.avatar,
-        subscriptionStatus: req.user.subscriptionStatus,
-        freeMinutesUsed: req.user.freeMinutesUsed
+        id: user._id,
+        name: user.name,
+        email: user.email,
+        avatar: user.avatar,
+        subscriptionStatus: user.subscriptionStatus,
+        freeMinutesUsed: user.freeMinutesUsed
       }
     });
-  } else {
-    res.status(401).json({ error: 'Not authenticated' });
+  } catch (error) {
+    res.status(401).json({ error: 'Invalid token' });
   }
 });
 
 // Logout
 router.post('/logout', (req, res) => {
-  req.logout((err) => {
-    if (err) {
-      return res.status(500).json({ error: 'Logout failed' });
-    }
-    res.json({ message: 'Logged out successfully' });
-  });
+  res.json({ message: 'Logged out successfully' });
 });
 
 // Subscribe (placeholder - no Stripe yet)
-router.patch('/user/subscribe', (req, res) => {
-  if (!req.isAuthenticated()) {
-    return res.status(401).json({ error: 'Not authenticated' });
-  }
+router.patch('/user/subscribe', async (req, res) => {
+  try {
+    const authHeader = req.headers.authorization;
+    if (!authHeader || !authHeader.startsWith('Bearer ')) {
+      return res.status(401).json({ error: 'Not authenticated' });
+    }
 
-  req.user.subscriptionStatus = 'active';
-  req.user.save()
-    .then(() => {
-      res.json({ 
-        message: 'Subscription activated',
-        user: {
-          id: req.user._id,
-          name: req.user.name,
-          email: req.user.email,
-          avatar: req.user.avatar,
-          subscriptionStatus: req.user.subscriptionStatus,
-          freeMinutesUsed: req.user.freeMinutesUsed
-        }
-      });
-    })
-    .catch((err) => {
-      console.error('Error updating subscription:', err);
-      res.status(500).json({ error: 'Failed to update subscription' });
+    const token = authHeader.split(' ')[1];
+    const decoded = jwt.verify(token, process.env.JWT_SECRET);
+    
+    const User = require('../models/User');
+    const user = await User.findById(decoded.id);
+    
+    if (!user) {
+      return res.status(401).json({ error: 'User not found' });
+    }
+
+    user.subscriptionStatus = 'active';
+    await user.save();
+    
+    res.json({ 
+      message: 'Subscription activated',
+      user: {
+        id: user._id,
+        name: user.name,
+        email: user.email,
+        avatar: user.avatar,
+        subscriptionStatus: user.subscriptionStatus,
+        freeMinutesUsed: user.freeMinutesUsed
+      }
     });
+  } catch (error) {
+    res.status(401).json({ error: 'Invalid token' });
+  }
 });
 
 module.exports = router;

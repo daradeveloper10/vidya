@@ -14,10 +14,16 @@ export const useAuth = () => {
 export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [token, setToken] = useState(localStorage.getItem('vidya_token'));
 
   useEffect(() => {
-    checkAuth();
-  }, []);
+    if (token) {
+      api.defaults.headers.common['Authorization'] = `Bearer ${token}`;
+      checkAuth();
+    } else {
+      setLoading(false);
+    }
+  }, [token]);
 
   const checkAuth = async () => {
     try {
@@ -25,9 +31,18 @@ export const AuthProvider = ({ children }) => {
       setUser(response.data.user);
     } catch (error) {
       setUser(null);
+      setToken(null);
+      localStorage.removeItem('vidya_token');
+      delete api.defaults.headers.common['Authorization'];
     } finally {
       setLoading(false);
     }
+  };
+
+  const setAuthToken = (newToken) => {
+    localStorage.setItem('vidya_token', newToken);
+    api.defaults.headers.common['Authorization'] = `Bearer ${newToken}`;
+    setToken(newToken);
   };
 
   const login = () => {
@@ -37,9 +52,13 @@ export const AuthProvider = ({ children }) => {
   const logout = async () => {
     try {
       await api.post('/api/auth/logout');
-      setUser(null);
     } catch (error) {
       console.error('Logout error:', error);
+    } finally {
+      setUser(null);
+      setToken(null);
+      localStorage.removeItem('vidya_token');
+      delete api.defaults.headers.common['Authorization'];
     }
   };
 
@@ -59,6 +78,7 @@ export const AuthProvider = ({ children }) => {
     logout,
     refreshUser,
     checkAuth,
+    setAuthToken,
     isAuthenticated: !!user,
   };
 

@@ -4,22 +4,21 @@ import { useAuth } from '../context/AuthContext';
 
 const AuthCallback = () => {
   const navigate = useNavigate();
-  const { checkAuth } = useAuth();
+  const { setAuthToken, checkAuth } = useAuth();
 
   useEffect(() => {
     const handleCallback = async () => {
-      console.log('AuthCallback loaded, URL:', window.location.href);
       const params = new URLSearchParams(window.location.search);
+      const token = params.get('token');
       const error = params.get('error');
 
-      if (error) {
+      if (error || !token) {
         navigate('/login?error=auth_failed');
         return;
       }
 
-      // Token arrived — session cookie was set by backend
-      // Just refresh auth state and go to dashboard
       try {
+        setAuthToken(token);
         await checkAuth();
         navigate('/dashboard');
       } catch {
