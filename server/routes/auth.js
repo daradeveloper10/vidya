@@ -11,9 +11,13 @@ router.get('/google',
 
 router.get('/google/callback',
   passport.authenticate('google', { 
-    failureRedirect: 'http://localhost:5173',
-    successRedirect: 'http://localhost:5173/dashboard'
-  })
+    failureRedirect: `${process.env.FRONTEND_URL}/login?error=auth_failed`,
+    session: true
+  }),
+  (req, res) => {
+    const token = Buffer.from(req.user._id.toString()).toString('base64');
+    res.redirect(`${process.env.FRONTEND_URL}/auth/callback?token=${token}`);
+  }
 );
 
 // Get current user
@@ -50,7 +54,6 @@ router.patch('/user/subscribe', (req, res) => {
     return res.status(401).json({ error: 'Not authenticated' });
   }
 
-  // Update user subscription status
   req.user.subscriptionStatus = 'active';
   req.user.save()
     .then(() => {

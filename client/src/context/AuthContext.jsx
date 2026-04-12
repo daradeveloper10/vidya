@@ -16,7 +16,6 @@ export const AuthProvider = ({ children }) => {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    // Check if user is already authenticated
     checkAuth();
   }, []);
 
@@ -32,8 +31,7 @@ export const AuthProvider = ({ children }) => {
   };
 
   const login = () => {
-    // Redirect to Google OAuth (proxy will handle routing to backend)
-    window.location.href = `${import.meta.env.VITE_API_URL || 'http://localhost:3000'}/api/auth/google`
+    window.location.href = `${import.meta.env.VITE_API_URL || 'http://localhost:3000'}/api/auth/google`;
   };
 
   const logout = async () => {
@@ -60,6 +58,7 @@ export const AuthProvider = ({ children }) => {
     login,
     logout,
     refreshUser,
+    checkAuth,
     isAuthenticated: !!user,
   };
 
