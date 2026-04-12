@@ -8,6 +8,7 @@ const AuthCallback = () => {
 
   useEffect(() => {
     const handleCallback = async () => {
+      console.log('AuthCallback loaded, URL:', window.location.href);
       const params = new URLSearchParams(window.location.search);
       const error = params.get('error');
 
