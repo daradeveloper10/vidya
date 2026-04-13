@@ -15,7 +15,6 @@ function Module() {
   
   const streamBuffer = useRef('');
   
-  // Custom markdown components with inline styles
   const markdownComponents = {
     h1: ({children}) => (
       <h1 style={{
@@ -106,6 +105,7 @@ function Module() {
       }}>{children}</td>
     ),
   };
+
   const [moduleIndex, setModuleIndex] = useState(parseInt(urlModuleIndex) || 0);
   const [curriculum, setCurriculum] = useState(null);
   const [lessonContent, setLessonContent] = useState('');
@@ -124,22 +124,18 @@ function Module() {
   const [video, setVideo] = useState(null);
   const [loadingVideo, setLoadingVideo] = useState(false);
 
-  // Define currentModule early with safe default
   const currentModule = curriculum?.modules?.[moduleIndex] || null;
 
   useEffect(() => {
     fetchCurriculum();
     startTimeTracking();
-    
     return () => {
-      // Cleanup interval on unmount
       if (window.timeTrackingInterval) {
         clearInterval(window.timeTrackingInterval);
       }
     };
   }, [curriculumId]);
 
-  // Update browser tab title
   useEffect(() => {
     if (curriculum && currentModule) {
       document.title = `${currentModule.title} | Vidya`;
@@ -151,18 +147,15 @@ function Module() {
 
   useEffect(() => {
     const controller = new AbortController();
-    
     if (curriculum) {
       fetchLesson(controller);
       fetchVideo();
     }
-    
     return () => {
       controller.abort();
     };
   }, [curriculum, moduleIndex]);
 
-  // Rotating loading messages based on duration
   useEffect(() => {
     if (!loadingLesson) return;
 
@@ -170,14 +163,8 @@ function Module() {
       const topic = curriculum?.topic || 'this topic';
       const duration = curriculum?.duration || '2hrs';
 
-      console.log('🔄 Loading Messages - Duration:', duration);
-      console.log('🔄 Loading Messages - Topic:', topic);
-
-      let messages = [];
-
       if (duration === '10min' || duration === '30min') {
-        console.log('✅ Selected: SHORT course messages (10min/30min)');
-        messages = [
+        return [
           `Thinking deeply about ${topic}...`,
           `Connecting the key ideas...`,
           `Crafting explanations you'll remember...`,
@@ -186,8 +173,7 @@ function Module() {
           `Almost ready to begin...`
         ];
       } else if (duration === '2hrs') {
-        console.log('✅ Selected: MEDIUM course messages (2hrs)');
-        messages = [
+        return [
           `Thinking deeply about ${topic}...`,
           `Connecting the key ideas...`,
           `Building your learning experience...`,
@@ -200,8 +186,7 @@ function Module() {
           `Your lesson is coming together...`
         ];
       } else {
-        console.log('✅ Selected: LONG course messages (10hrs/20hrs/30hrs)');
-        messages = [
+        return [
           `Thinking deeply about ${topic}...`,
           `Going deep on ${topic} for you...`,
           `Connecting the key ideas across the subject...`,
@@ -216,31 +201,14 @@ function Module() {
           `Your lesson is coming together...`
         ];
       }
-
-      console.log('📝 Messages array:', messages);
-      return messages;
     };
 
     const messages = getLoadingMessages();
     const duration = curriculum?.duration || '2hrs';
-    let interval;
-
-    if (duration === '10min' || duration === '30min') {
-      interval = 1500; // 1.5 seconds
-    } else if (duration === '2hrs') {
-      interval = 2000; // 2 seconds
-    } else {
-      interval = 3000; // 3 seconds
-    }
-
-    console.log(`⏱️ Message rotation interval: ${interval}ms`);
+    const interval = duration === '10min' || duration === '30min' ? 1500 : duration === '2hrs' ? 2000 : 3000;
 
     const timer = setInterval(() => {
-      setLoadingMessageIndex((prev) => {
-        const newIndex = (prev + 1) % messages.length;
-        console.log(`💬 Showing message ${newIndex + 1}/${messages.length}: "${messages[newIndex]}"`);
-        return newIndex;
-      });
+      setLoadingMessageIndex((prev) => (prev + 1) % messages.length);
     }, interval);
 
     return () => clearInterval(timer);
@@ -250,8 +218,6 @@ function Module() {
     try {
       const response = await api.get(`/api/curriculum/${curriculumId}`);
       setCurriculum(response.data);
-      
-      // Get free minutes from user
       const userResponse = await api.get('/api/auth/me');
       const used = userResponse.data.user.freeMinutesUsed || 0;
       setFreeMinutesRemaining(Math.max(0, 30 - used));
@@ -268,31 +234,31 @@ function Module() {
       setIsStreaming(false);
       streamBuffer.current = '';
 
-      const response = await fetch(`/api/module/${curriculumId}/${moduleIndex}/lesson`, {
+      const token = localStorage.getItem('vidya_token');
+      const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:3000';
+
+      const response = await fetch(`${apiUrl}/api/module/${curriculumId}/${moduleIndex}/lesson`, {
         method: 'POST',
         credentials: 'include',
         signal: controller.signal,
         headers: {
-          'Content-Type': 'application/json'
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
         }
       });
 
-      // Check if response is JSON (cached) or SSE (streaming)
       const contentType = response.headers.get('content-type');
       
       if (contentType && contentType.includes('application/json')) {
-        // Cached lesson - display immediately
         const data = await response.json();
         setLessonContent(data.content);
         setLoadingLesson(false);
         return;
       }
 
-      // Streaming lesson
       setIsStreaming(true);
       setLoadingLesson(false);
       
-      // Update UI every 150ms from buffer
       const updateInterval = setInterval(() => {
         setLessonContent(streamBuffer.current);
       }, 150);
@@ -352,7 +318,6 @@ function Module() {
   };
 
   const startTimeTracking = () => {
-    // Send heartbeat every 60 seconds
     window.timeTrackingInterval = setInterval(async () => {
       try {
         const response = await api.post('/api/module/time', { minutes: 1 });
@@ -360,23 +325,26 @@ function Module() {
       } catch (error) {
         console.error('Error tracking time:', error);
       }
-    }, 60000); // 60 seconds
+    }, 60000);
   };
 
   const fetchVideo = async () => {
     try {
-      // Check if module already has cached video
-      if (currentModule?.video?.videoId) {
-        setVideo(currentModule.video);
+      // Use curriculum data directly to check cached video
+      const mod = curriculum?.modules?.[moduleIndex];
+      if (mod?.video?.videoId) {
+        setVideo(mod.video);
         return;
       }
 
       setLoadingVideo(true);
       
       const response = await api.post('/api/video/search', {
-        moduleTitle: currentModule.title,
+        moduleTitle: mod.title,
         curriculumTopic: curriculum.topic,
-        moduleDescription: currentModule.description
+        moduleDescription: mod.description,
+        curriculumId: curriculumId,
+        moduleIndex: moduleIndex
       });
 
       if (response.data.video) {
@@ -392,15 +360,10 @@ function Module() {
   const handleExplainDifferently = async (conceptText, blockIndex) => {
     try {
       setExplainLoading({ ...explainLoading, [blockIndex]: true });
-      
-      // Clear old content first
       setLessonContent('');
-      
       const response = await api.post(`/api/module/${curriculumId}/${moduleIndex}/explain`, {
         conceptText
       });
-      
-      // Set new explanation (replaces old content completely)
       setLessonContent(response.data.explanation);
     } catch (error) {
       console.error('Error getting alternative explanation:', error);
@@ -426,16 +389,13 @@ function Module() {
     setSelectedAnswer(answer);
     const currentQuestion = questions[currentQuestionIndex];
     const isCorrect = answer === currentQuestion.correctAnswer;
-    
     setAnswers([...answers, { question: currentQuestion.question, selected: answer, correct: isCorrect }]);
     
-    // Move to next question after 2 seconds
     setTimeout(() => {
       if (currentQuestionIndex < questions.length - 1) {
         setCurrentQuestionIndex(currentQuestionIndex + 1);
         setSelectedAnswer(null);
       } else {
-        // Quiz complete - submit score
         submitQuizScore();
         setShowSummary(true);
       }
@@ -446,13 +406,10 @@ function Module() {
     try {
       const correct = answers.filter(a => a.correct).length + (selectedAnswer === questions[currentQuestionIndex].correctAnswer ? 1 : 0);
       const total = questions.length;
-      
       await api.post(`/api/module/${curriculumId}/${moduleIndex}/submit`, {
         score: correct,
         totalQuestions: total
       });
-      
-      console.log(`Quiz submitted: ${correct}/${total}`);
     } catch (error) {
       console.error('Error submitting quiz:', error);
     }
@@ -465,22 +422,16 @@ function Module() {
   };
 
   const getScoreMessage = (percentage) => {
-    if (percentage >= 80) {
-      return "Excellent work! You're ready for the next module 🎉";
-    } else if (percentage >= 60) {
-      return "Good effort! Review the concepts and you'll master this.";
-    } else {
-      return "Let's reinforce this before moving on. Consider reviewing the lesson.";
-    }
+    if (percentage >= 80) return "Excellent work! You're ready for the next module 🎉";
+    if (percentage >= 60) return "Good effort! Review the concepts and you'll master this.";
+    return "Let's reinforce this before moving on. Consider reviewing the lesson.";
   };
 
   const goToNextModule = () => {
-    // Check if user has hit free limit
     if (user?.subscriptionStatus === 'free' && freeMinutesRemaining <= 0) {
       setShowPaywall(true);
       return;
     }
-
     if (moduleIndex < curriculum.modules.length - 1) {
       setModuleIndex(moduleIndex + 1);
       setShowQuiz(false);
@@ -508,13 +459,10 @@ function Module() {
   }
 
   const score = answers.length > 0 ? calculateScore() : null;
-
-  // Split lesson content into blocks for "Explain differently" buttons
   const contentBlocks = lessonContent.split('\n\n').filter(block => block.trim().length > 0);
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-primary-950 via-primary-900 to-primary-800">
-      {/* Freemium Banner */}
       {user?.subscriptionStatus === 'free' && (
         <div className={`${getBannerColor()} px-6 py-3 text-center font-body text-sm transition-colors`}>
           ⏱ {freeMinutesRemaining} min of free learning remaining
@@ -524,7 +472,6 @@ function Module() {
         </div>
       )}
 
-      {/* Header */}
       <header className="px-6 py-6 border-b border-primary-700/50">
         <div className="max-w-4xl mx-auto flex items-center justify-between">
           <div>
@@ -543,7 +490,6 @@ function Module() {
       </header>
 
       <main className="max-w-4xl mx-auto px-6 py-12 space-y-12">
-        {/* SECTION A: LESSON */}
         {!showQuiz && !showSummary && (
           <section className="space-y-8">
             <div className="space-y-4">
@@ -559,7 +505,6 @@ function Module() {
                     const topic = curriculum.topic;
                     const duration = curriculum.duration;
                     let messages = [];
-
                     if (duration === '10min' || duration === '30min') {
                       messages = [
                         `Thinking deeply about ${topic}...`,
@@ -598,7 +543,6 @@ function Module() {
                         `Your lesson is coming together...`
                       ];
                     }
-
                     return messages[loadingMessageIndex % messages.length];
                   })()}
                 </div>
@@ -639,7 +583,6 @@ function Module() {
               </>
             )}
 
-            {/* VIDEO SECTION */}
             {!loadingLesson && !isStreaming && (
               <>
                 {loadingVideo && (
@@ -653,7 +596,6 @@ function Module() {
                     <p className="text-primary-200 font-body text-center italic">
                       {video.contextLine}
                     </p>
-                    
                     <div className="relative" style={{ paddingBottom: '56.25%', height: 0 }}>
                       <iframe
                         src={`https://www.youtube.com/embed/${video.videoId}`}
@@ -664,7 +606,6 @@ function Module() {
                         style={{ border: 'none' }}
                       />
                     </div>
-
                     <div className="text-center space-y-1">
                       <p className="text-white font-body font-semibold">{video.title}</p>
                       <p className="text-primary-400 font-body text-sm">
@@ -673,23 +614,20 @@ function Module() {
                     </div>
                   </div>
                 )}
-              </>
-            )}
 
-            {!loadingLesson && !isStreaming && (
-              <div className="pt-8 text-center">
-                <button
-                  onClick={startQuiz}
-                  className="px-8 py-4 bg-accent-500 text-white font-semibold rounded-lg hover:bg-accent-600 transition-all duration-200 shadow-lg hover:shadow-xl font-body text-lg"
-                >
-                  Test Your Knowledge →
-                </button>
-              </div>
+                <div className="pt-8 text-center">
+                  <button
+                    onClick={startQuiz}
+                    className="px-8 py-4 bg-accent-500 text-white font-semibold rounded-lg hover:bg-accent-600 transition-all duration-200 shadow-lg hover:shadow-xl font-body text-lg"
+                  >
+                    Test Your Knowledge →
+                  </button>
+                </div>
+              </>
             )}
           </section>
         )}
 
-        {/* SECTION B: QUIZ */}
         {showQuiz && !showSummary && questions.length > 0 && (
           <section className="space-y-8">
             <div className="text-center space-y-2">
@@ -712,11 +650,8 @@ function Module() {
 
                   let buttonClass = 'bg-white/5 hover:bg-white/10 text-white';
                   if (showResult) {
-                    if (isCorrect) {
-                      buttonClass = 'bg-green-500/20 border-green-500 text-green-300';
-                    } else if (isSelected) {
-                      buttonClass = 'bg-red-500/20 border-red-500 text-red-300';
-                    }
+                    if (isCorrect) buttonClass = 'bg-green-500/20 border-green-500 text-green-300';
+                    else if (isSelected) buttonClass = 'bg-red-500/20 border-red-500 text-red-300';
                   }
 
                   return (
@@ -743,7 +678,6 @@ function Module() {
           </section>
         )}
 
-        {/* SECTION C: MODULE SUMMARY */}
         {showSummary && score && (
           <section className="space-y-8">
             <div className="text-center space-y-4">
@@ -751,9 +685,7 @@ function Module() {
               <div className="text-6xl font-bold text-accent-400">
                 {score.correct}/{score.total}
               </div>
-              <p className="text-2xl text-primary-200 font-body">
-                {score.percentage}% Correct
-              </p>
+              <p className="text-2xl text-primary-200 font-body">{score.percentage}% Correct</p>
               <p className="text-xl text-primary-300 font-body max-w-2xl mx-auto">
                 {getScoreMessage(score.percentage)}
               </p>
@@ -787,7 +719,6 @@ function Module() {
         )}
       </main>
 
-      {/* Paywall */}
       {showPaywall && (
         <Paywall
           nextModuleTitle={
@@ -797,7 +728,7 @@ function Module() {
           }
           onClose={() => {
             setShowPaywall(false);
-            fetchCurriculum(); // Refresh to get updated subscription status
+            fetchCurriculum();
           }}
         />
       )}
