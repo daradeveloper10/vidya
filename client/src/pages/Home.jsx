@@ -245,7 +245,7 @@ function Home() {
                     className="p-6 bg-white/5 backdrop-blur-sm border border-primary-700 rounded-lg hover:bg-white/10 hover:border-accent-500 transition-all duration-200 text-left group"
                   >
                     <p className="text-primary-100 group-hover:text-white transition-colors font-body">
-                      "{t.promptPhrasing}"
+                      {t.promptPhrasing}
                     </p>
                   </button>
                 ))
