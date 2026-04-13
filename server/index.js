@@ -10,6 +10,8 @@ const authRoutes = require('./routes/auth');
 const curriculumRoutes = require('./routes/curriculum');
 const moduleRoutes = require('./routes/module');
 const videoRoutes = require('./routes/video');
+const topicsRoutes = require('./routes/topics');
+const { startTopicRefreshJob } = require('./jobs/topicRefreshJob');
 
 // Initialize Express app
 const app = express();
@@ -93,7 +95,10 @@ passport.deserializeUser(async (id, done) => {
 
 // MongoDB connection
 mongoose.connect(process.env.MONGODB_URI)
-.then(() => console.log('✅ MongoDB connected successfully'))
+.then(() => {
+  console.log('✅ MongoDB connected successfully');
+  startTopicRefreshJob();
+})
 .catch((err) => {
   console.error('❌ MongoDB connection error:', err);
   process.exit(1);
@@ -104,6 +109,7 @@ app.use('/api/auth', authRoutes);
 app.use('/api/curriculum', curriculumRoutes);
 app.use('/api/module', moduleRoutes);
 app.use('/api/video', videoRoutes);
+app.use('/api/topics', topicsRoutes);
 
 // Health check route
 app.get('/health', (req, res) => {
