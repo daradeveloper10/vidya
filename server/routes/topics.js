@@ -2,7 +2,7 @@ const express = require('express');
 const router = express.Router();
 const TrendingTopic = require('../models/TrendingTopic');
 const Curriculum = require('../models/Curriculum');
-const authMiddleware = require('../middleware/auth');
+const { isAuthenticated } = require('../middleware/auth');
 const { getRandomPrompt } = require('../utils/youtubeFetcher');
 
 const FALLBACK_TOPICS = [
@@ -27,7 +27,7 @@ function shuffle(array) {
   return arr;
 }
 
-router.get('/spark', authMiddleware, async (req, res) => {
+router.get('/spark', isAuthenticated, async (req, res) => {
   try {
     const userId = req.user.id;
 
