@@ -9,7 +9,6 @@ function Dashboard() {
   const [curricula, setCurricula] = useState([]);
   const [loading, setLoading] = useState(true);
 
-  // Loading skeleton component
   const SkeletonCard = () => (
     <div className="bg-white/5 backdrop-blur-sm border border-primary-700 rounded-xl p-6 space-y-4 animate-pulse">
       <div className="h-6 bg-white/10 rounded w-3/4"></div>
@@ -21,6 +20,7 @@ function Dashboard() {
       </div>
     </div>
   );
+
   const [searchQuery, setSearchQuery] = useState('');
 
   useEffect(() => {
@@ -36,7 +36,6 @@ function Dashboard() {
     } catch (error) {
       console.error('Error fetching curricula:', error);
       console.error('Error details:', error.response?.data);
-      // If unauthorized, user might not be logged in
       if (error.response?.status === 401) {
         navigate('/');
       }
@@ -46,15 +45,10 @@ function Dashboard() {
   };
 
   const handleDelete = async (curriculumId, e) => {
-    e.stopPropagation(); // Prevent card click
-    
-    if (!confirm('Are you sure you want to delete this curriculum?')) {
-      return;
-    }
-
+    e.stopPropagation();
+    if (!confirm('Are you sure you want to delete this curriculum?')) return;
     try {
       await api.delete(`/api/curriculum/${curriculumId}`);
-      // Remove from local state
       setCurricula(curricula.filter(c => c._id !== curriculumId));
     } catch (error) {
       console.error('Error deleting curriculum:', error);
@@ -68,23 +62,23 @@ function Dashboard() {
     return Math.round((completedModules / curriculum.modules.length) * 100);
   };
 
+  const getDisplayTitle = (curriculum) => curriculum.displayTitle || curriculum.topic;
+  const getSubtitle = (curriculum) => curriculum.subtitle || curriculum.duration;
+
   const getInProgressCurriculum = () => {
     return curricula.find(c => !c.completed && c.currentModuleIndex < c.modules.length);
   };
 
-  const getActiveCurricula = () => {
-    return curricula.filter(c => !c.completed);
-  };
-
-  const getCompletedCurricula = () => {
-    return curricula.filter(c => c.completed);
-  };
+  const getActiveCurricula = () => curricula.filter(c => !c.completed);
+  const getCompletedCurricula = () => curricula.filter(c => c.completed);
 
   const filteredActiveCurricula = getActiveCurricula().filter(c =>
+    getDisplayTitle(c).toLowerCase().includes(searchQuery.toLowerCase()) ||
     c.topic.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
   const filteredCompletedCurricula = getCompletedCurricula().filter(c =>
+    getDisplayTitle(c).toLowerCase().includes(searchQuery.toLowerCase()) ||
     c.topic.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
@@ -113,7 +107,6 @@ function Dashboard() {
     const now = new Date();
     const diffTime = Math.abs(now - d);
     const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
-    
     if (diffDays === 0) return 'Today';
     if (diffDays === 1) return 'Yesterday';
     if (diffDays < 7) return `${diffDays} days ago`;
@@ -147,18 +140,11 @@ function Dashboard() {
         <Link to="/" className="text-3xl font-heading font-bold text-white hover:text-accent-400 transition-colors">
           Vidya
         </Link>
-        
         <div className="flex items-center gap-4">
-          <Link 
-            to="/passport" 
-            className="px-4 py-2 text-primary-200 hover:text-white transition-colors font-body"
-          >
+          <Link to="/passport" className="px-4 py-2 text-primary-200 hover:text-white transition-colors font-body">
             Knowledge Passport
           </Link>
-          <button
-            onClick={logout}
-            className="px-4 py-2 text-primary-200 hover:text-white transition-colors font-body"
-          >
+          <button onClick={logout} className="px-4 py-2 text-primary-200 hover:text-white transition-colors font-body">
             Sign Out
           </button>
         </div>
@@ -177,9 +163,12 @@ function Dashboard() {
                 <div className="space-y-2">
                   <p className="text-accent-300 font-body text-sm uppercase tracking-wide">Continue Learning</p>
                   <h2 className="text-3xl font-heading font-bold text-white">
-                    {inProgressCurriculum.topic}
+                    {getDisplayTitle(inProgressCurriculum)}
                   </h2>
                   <p className="text-primary-200 font-body">
+                    {getSubtitle(inProgressCurriculum)}
+                  </p>
+                  <p className="text-primary-300 font-body text-sm">
                     Module {inProgressCurriculum.currentModuleIndex + 1} of {inProgressCurriculum.modules.length} • {calculateProgress(inProgressCurriculum)}% complete
                   </p>
                 </div>
@@ -196,10 +185,7 @@ function Dashboard() {
               <h2 className="text-2xl font-heading font-bold text-white mb-4">
                 Ready to learn something new?
               </h2>
-              <Link
-                to="/"
-                className="inline-block px-8 py-4 bg-accent-500 text-white font-semibold rounded-lg hover:bg-accent-600 transition-all duration-200 shadow-lg hover:shadow-xl font-body"
-              >
+              <Link to="/" className="inline-block px-8 py-4 bg-accent-500 text-white font-semibold rounded-lg hover:bg-accent-600 transition-all duration-200 shadow-lg hover:shadow-xl font-body">
                 Start Learning
               </Link>
             </div>
@@ -232,16 +218,18 @@ function Dashboard() {
                       className="bg-white/5 backdrop-blur-sm border border-primary-700 rounded-xl p-6 hover:border-accent-500 transition-all duration-200 space-y-4 group cursor-pointer"
                       onClick={() => navigate(`/module/${curriculum._id}/${curriculum.currentModuleIndex || 0}`)}
                     >
-                      <div className="space-y-2">
+                      <div className="space-y-1">
                         <h4 className="text-xl font-heading font-bold text-white group-hover:text-accent-400 transition-colors">
-                          {curriculum.displayTitle || curriculum.topic}
+                          {getDisplayTitle(curriculum)}
                         </h4>
+                        <p className="text-accent-300 font-body text-sm italic">
+                          {getSubtitle(curriculum)}
+                        </p>
                         <p className="text-primary-300 font-body text-sm">
-                          {curriculum.duration} • {curriculum.modules.length} modules
+                          {curriculum.modules.length} modules
                         </p>
                       </div>
 
-                      {/* Progress Bar */}
                       <div className="space-y-2">
                         <div className="flex justify-between text-sm font-body">
                           <span className="text-primary-300">Progress</span>
@@ -290,12 +278,15 @@ function Dashboard() {
                     onClick={() => navigate(`/complete/${curriculum._id}`)}
                   >
                     <div className="flex items-start justify-between">
-                      <div className="space-y-2 flex-1">
+                      <div className="space-y-1 flex-1">
                         <h4 className="text-xl font-heading font-bold text-white group-hover:text-accent-400 transition-colors">
-                          {curriculum.topic}
+                          {getDisplayTitle(curriculum)}
                         </h4>
+                        <p className="text-accent-300 font-body text-sm italic">
+                          {getSubtitle(curriculum)}
+                        </p>
                         <p className="text-primary-300 font-body text-sm">
-                          {curriculum.duration} • {curriculum.modules.length} modules
+                          {curriculum.modules.length} modules
                         </p>
                       </div>
                       <div className="text-4xl">🏆</div>
@@ -335,7 +326,6 @@ function Dashboard() {
         {/* ZONE 3: Discover */}
         <section className="space-y-6">
           <h2 className="text-3xl font-heading font-bold text-white">Continue Your Journey</h2>
-          
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
             {featuredPaths.map((path, index) => (
               <div
@@ -345,15 +335,10 @@ function Dashboard() {
                 <h4 className="text-2xl font-heading font-bold text-white group-hover:text-accent-400 transition-colors">
                   {path.title}
                 </h4>
-                <p className="text-primary-200 font-body">
-                  {path.description}
-                </p>
+                <p className="text-primary-200 font-body">{path.description}</p>
                 <div className="flex flex-wrap gap-2">
                   {path.topics.map((topic, idx) => (
-                    <span
-                      key={idx}
-                      className="px-3 py-1 bg-primary-800/50 text-primary-100 text-sm rounded-full font-body"
-                    >
+                    <span key={idx} className="px-3 py-1 bg-primary-800/50 text-primary-100 text-sm rounded-full font-body">
                       {topic}
                     </span>
                   ))}
