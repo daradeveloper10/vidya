@@ -5,6 +5,21 @@ const anthropic = new Anthropic({
   apiKey: process.env.ANTHROPIC_API_KEY,
 });
 
+async function callAnthropicWithRetry(params, maxRetries = 3) {
+  for (let attempt = 1; attempt <= maxRetries; attempt++) {
+    try {
+      return await anthropic.messages.create(params);
+    } catch (error) {
+      if (error.status === 529 && attempt < maxRetries) {
+        console.log(`⏳ Anthropic overloaded, retrying in ${attempt * 2}s (attempt ${attempt}/${maxRetries})...`);
+        await new Promise(resolve => setTimeout(resolve, attempt * 2000));
+      } else {
+        throw error;
+      }
+    }
+  }
+}
+
 // Search and score videos for a module
 exports.searchVideo = async (req, res) => {
   try {
@@ -17,7 +32,7 @@ exports.searchVideo = async (req, res) => {
     console.log('🎥 Searching video for:', moduleTitle);
 
     // Step 1: Generate precise search query with Claude
-    const queryMessage = await anthropic.messages.create({
+    const queryMessage = await callAnthropicWithRetry({
       model: 'claude-sonnet-4-20250514',
       max_tokens: 200,
       messages: [{
@@ -55,7 +70,7 @@ ${i + 1}. Title: ${v.title}
    VideoID: ${v.videoId}
 `).join('\n');
 
-    const scoringMessage = await anthropic.messages.create({
+    const scoringMessage = await callAnthropicWithRetry({
       model: 'claude-sonnet-4-20250514',
       max_tokens: 1000,
       messages: [{

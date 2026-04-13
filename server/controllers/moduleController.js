@@ -4,6 +4,21 @@ const anthropic = new Anthropic({
   apiKey: process.env.ANTHROPIC_API_KEY,
 });
 
+async function callAnthropicWithRetry(params, maxRetries = 3) {
+  for (let attempt = 1; attempt <= maxRetries; attempt++) {
+    try {
+      return await anthropic.messages.create(params);
+    } catch (error) {
+      if (error.status === 529 && attempt < maxRetries) {
+        console.log(`⏳ Anthropic overloaded, retrying in ${attempt * 2}s (attempt ${attempt}/${maxRetries})...`);
+        await new Promise(resolve => setTimeout(resolve, attempt * 2000));
+      } else {
+        throw error;
+      }
+    }
+  }
+}
+
 // Generate lesson content for a module (with streaming)
 exports.generateLesson = async (req, res) => {
   try {
@@ -163,7 +178,7 @@ exports.generateQuiz = async (req, res) => {
     console.log('📝 Generating quiz for module:', module.title);
 
     // Generate quiz with Claude
-    const message = await anthropic.messages.create({
+    const message = await callAnthropicWithRetry({
       model: 'claude-sonnet-4-20250514',
       max_tokens: 2000,
       messages: [{
@@ -295,7 +310,7 @@ exports.explainDifferently = async (req, res) => {
     console.log('🔄 Generating alternative explanation');
 
     // Generate alternative explanation with Claude
-    const message = await anthropic.messages.create({
+    const message = await callAnthropicWithRetry({
       model: 'claude-sonnet-4-20250514',
       max_tokens: 1000,
       messages: [{

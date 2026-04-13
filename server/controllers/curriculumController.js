@@ -4,6 +4,21 @@ const anthropic = new Anthropic({
   apiKey: process.env.ANTHROPIC_API_KEY,
 });
 
+async function callAnthropicWithRetry(params, maxRetries = 3) {
+  for (let attempt = 1; attempt <= maxRetries; attempt++) {
+    try {
+      return await anthropic.messages.create(params);
+    } catch (error) {
+      if (error.status === 529 && attempt < maxRetries) {
+        console.log(`⏳ Anthropic overloaded, retrying in ${attempt * 2}s (attempt ${attempt}/${maxRetries})...`);
+        await new Promise(resolve => setTimeout(resolve, attempt * 2000));
+      } else {
+        throw error;
+      }
+    }
+  }
+}
+
 // Analyse user's learning topic input for clarity
 exports.analyse = async (req, res) => {
   try {
@@ -15,7 +30,7 @@ exports.analyse = async (req, res) => {
 
     console.log('🔍 Analysing topic:', topic);
 
-    const message = await anthropic.messages.create({
+    const message = await callAnthropicWithRetry({
       model: 'claude-sonnet-4-20250514',
       max_tokens: 1024,
       messages: [{
@@ -145,7 +160,7 @@ exports.getFurtherLearning = async (req, res) => {
 
     console.log('🎓 Generating further learning recommendations for:', curriculum.topic);
 
-    const message = await anthropic.messages.create({
+    const message = await callAnthropicWithRetry({
       model: 'claude-sonnet-4-20250514',
       max_tokens: 2000,
       messages: [{
@@ -311,7 +326,7 @@ Time commitment: ${duration}`;
       contextPrompt += `\n\nAdditional context from user:\n${clarificationAnswers.join('\n')}`;
     }
 
-    const message = await anthropic.messages.create({
+    const message = await callAnthropicWithRetry({
       model: 'claude-sonnet-4-20250514',
       max_tokens: 4096,
       messages: [{
@@ -357,7 +372,7 @@ Respond ONLY with the JSON object, no other text.`
 
     // Generate clean display title and subtitle
     console.log('🎨 Generating display title...');
-    const titleMessage = await anthropic.messages.create({
+    const titleMessage = await callAnthropicWithRetry({
       model: 'claude-sonnet-4-20250514',
       max_tokens: 200,
       messages: [{
