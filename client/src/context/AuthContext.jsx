@@ -3,6 +3,12 @@ import api from '../services/api';
 
 const AuthContext = createContext(null);
 
+// Set token on axios immediately if it exists in localStorage
+const storedToken = localStorage.getItem('vidya_token');
+if (storedToken) {
+  api.defaults.headers.common['Authorization'] = `Bearer ${storedToken}`;
+}
+
 export const useAuth = () => {
   const context = useContext(AuthContext);
   if (!context) {
@@ -14,16 +20,15 @@ export const useAuth = () => {
 export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
-  const [token, setToken] = useState(localStorage.getItem('vidya_token'));
+  const [token, setToken] = useState(storedToken);
 
   useEffect(() => {
     if (token) {
-      api.defaults.headers.common['Authorization'] = `Bearer ${token}`;
       checkAuth();
     } else {
       setLoading(false);
     }
-  }, [token]);
+  }, []);
 
   const checkAuth = async () => {
     try {
