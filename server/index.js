@@ -25,9 +25,9 @@ app.use(cors({
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
-// Session configuration
+// Session configuration (kept for passport compatibility)
 app.use(session({
-  secret: process.env.SESSION_SECRET,
+  secret: process.env.SESSION_SECRET || 'fallback_secret',
   resave: false,
   saveUninitialized: false,
   cookie: {
@@ -39,7 +39,6 @@ app.use(session({
 
 // Passport initialization
 app.use(passport.initialize());
-app.use(passport.session());
 
 // Passport Google OAuth configuration
 const GoogleStrategy = require('passport-google-oauth20').Strategy;
@@ -48,15 +47,13 @@ const User = require('./models/User');
 passport.use(new GoogleStrategy({
     clientID: process.env.GOOGLE_CLIENT_ID,
     clientSecret: process.env.GOOGLE_CLIENT_SECRET,
-    callbackURL: process.env.NODE_ENV === 'production' ? 'https://vidya-server.onrender.com/api/auth/google/callback' : 'http://localhost:3000/api/auth/google/callback',
+    callbackURL: 'https://vidya-server.onrender.com/api/auth/google/callback',
     },
   async (accessToken, refreshToken, profile, done) => {
     try {
       console.log('🔐 Google OAuth callback received');
-      // User authenticated via Google OAuth
       console.log('🆔 Google ID:', profile.id);
       
-      // Check if user already exists
       let user = await User.findOne({ googleId: profile.id });
       
       if (user) {
@@ -64,7 +61,6 @@ passport.use(new GoogleStrategy({
         return done(null, user);
       }
       
-      // Create new user
       console.log('🆕 Creating new user...');
       user = await User.create({
         googleId: profile.id,
@@ -114,12 +110,12 @@ app.get('/health', (req, res) => {
   res.json({ status: 'ok', message: 'Vidya server is running' });
 });
 
-// Error handling middleware
+// Error handling middleware - shows full error for debugging
 app.use((err, req, res, next) => {
-  console.error(err.stack);
+  console.error('🔴 Server error:', err.stack);
   res.status(500).json({ 
     error: 'Something went wrong!',
-    message: process.env.NODE_ENV === 'development' ? err.message : undefined
+    message: err.message
   });
 });
 
@@ -128,11 +124,9 @@ const server = app.listen(PORT, () => {
   console.log(`🚀 Vidya server running on http://localhost:${PORT}`);
 });
 
-// Handle port already in use error
 server.on('error', (err) => {
   if (err.code === 'EADDRINUSE') {
-    console.error(`❌ Port ${PORT} is already in use. Please free up the port or use a different one.`);
-    console.error(`   You can kill the process using: lsof -ti:${PORT} | xargs kill -9`);
+    console.error(`❌ Port ${PORT} is already in use.`);
     process.exit(1);
   } else {
     console.error('❌ Server error:', err);
@@ -140,7 +134,6 @@ server.on('error', (err) => {
   }
 });
 
-// Graceful shutdown
 process.on('SIGTERM', () => {
   console.log('SIGTERM signal received: closing HTTP server');
   server.close(() => {
