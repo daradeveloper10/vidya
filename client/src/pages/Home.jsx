@@ -24,7 +24,7 @@ function Home() {
     setSparkLoading(true);
     setSparkError(false);
     try {
-      const token = localStorage.getItem('token');
+      const token = localStorage.getItem('vidya_token');
       const response = await fetch(
         'https://vidya-server.onrender.com/api/topics/spark',
         {
