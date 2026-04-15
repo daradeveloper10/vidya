@@ -2,20 +2,8 @@ const axios = require('axios');
 
 const EDUCATIONAL_CATEGORY_IDS = ['27', '28'];
 
-const PROMPT_TEMPLATES = [
-  (topic) => `Teach me the basics of ${topic}`,
-  (topic) => `How does ${topic} work?`,
-  (topic) => `Give me a beginner's guide to ${topic}`,
-  (topic) => `What should I know about ${topic}?`,
-  (topic) => `Help me understand ${topic}`,
-  (topic) => `Break down ${topic} for me`,
-  (topic) => `Explain ${topic} like I'm new to it`,
-  (topic) => `What's the story behind ${topic}?`,
-];
-
 function getRandomPrompt(topic) {
-  const template = PROMPT_TEMPLATES[Math.floor(Math.random() * PROMPT_TEMPLATES.length)];
-  return template(topic);
+  return topic;
 }
 
 function extractTopicFromTitle(title) {
@@ -24,6 +12,57 @@ function extractTopicFromTitle(title) {
     .replace(/[^\w\s-]/g, '')
     .replace(/\s{2,}/g, ' ')
     .trim();
+}
+
+async function filterAndCleanTopics(topics) {
+  const Anthropic = require('@anthropic-ai/sdk');
+  const client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
+
+  const topicList = topics.map((t, i) => `${i}: ${t.topic}`).join('\n');
+
+  const response = await client.messages.create({
+    model: 'claude-opus-4-5',
+    max_tokens: 1024,
+    messages: [
+      {
+        role: 'user',
+        content: `You are filtering and cleaning a list of topics extracted from YouTube video titles for a self-learning app.
+
+Remove any topic that is:
+- A clickbait headline or viral story
+- A product name, gadget, or consumer item
+- A celebrity name or personal story
+- A news event or meme
+- Nonsensical or too vague to be a real subject
+- Not something a person would genuinely study
+
+Keep only real learnable subjects — academic disciplines, sciences, technologies, professional skills, historical movements, or concepts with genuine educational depth.
+
+For every topic you keep, clean the text into a short, clear 2-5 word subject name. Remove YouTube noise, fix capitalisation. Examples: "3D Printing", "Quantum Computing", "The Roman Empire", "Personal Finance", "Machine Learning".
+
+Here are the topics:
+${topicList}
+
+Reply with ONLY a JSON array like this:
+[{"index": 0, "cleanTopic": "Machine Learning"}, {"index": 3, "cleanTopic": "Quantum Physics"}]
+
+No explanation, just the JSON array.`
+      }
+    ]
+  });
+
+  try {
+    const text = response.content[0].text.trim();
+    const kept = JSON.parse(text);
+    return kept.map(({ index, cleanTopic }) => ({
+      ...topics[index],
+      topic: cleanTopic,
+      promptPhrasing: cleanTopic,
+    }));
+  } catch (err) {
+    console.error('[YouTube] Failed to parse AI filter response:', err.message);
+    return topics;
+  }
 }
 
 async function fetchTrendingEducationalTopics() {
@@ -73,7 +112,8 @@ async function fetchTrendingEducationalTopics() {
     return true;
   });
 
-  return unique;
+  const cleaned = await filterAndCleanTopics(unique);
+  return cleaned;
 }
 
 module.exports = { fetchTrendingEducationalTopics, getRandomPrompt };
