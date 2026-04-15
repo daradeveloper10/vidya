@@ -52,7 +52,9 @@ No explanation, just the JSON array.`
   });
 
   try {
-    const text = response.content[0].text.trim();
+    let text = response.content[0].text.trim();
+    // Remove markdown code fences if present
+    text = text.replace(/```json\n?/g, '').replace(/```\n?/g, '').trim();
     const kept = JSON.parse(text);
     return kept.map(({ index, cleanTopic }) => ({
       ...topics[index],
