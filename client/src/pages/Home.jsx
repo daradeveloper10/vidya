@@ -26,7 +26,7 @@ function Home() {
     try {
       const token = localStorage.getItem('token');
       const response = await fetch(
-        `${import.meta.env.VITE_API_BASE_URL}/api/topics/spark`,
+        'https://vidya-server.onrender.com/api/topics/spark',
         {
           headers: {
             Authorization: `Bearer ${token}`,
