@@ -14,7 +14,6 @@ function Home() {
   const [clarificationQuestions, setClarificationQuestions] = useState([]);
   const [clarificationOptions, setClarificationOptions] = useState([]);
   const [clarificationAnswers, setClarificationAnswers] = useState([]);
-  const [showSignInPrompt, setShowSignInPrompt] = useState(false);
 
   // Spark cards state
   const [sparkTopics, setSparkTopics] = useState([]);
@@ -104,7 +103,6 @@ function Home() {
 
   const startLearningFlow = async (topic) => {
     setFlowState('analysing');
-    setShowSignInPrompt(false);
     try {
       const response = await api.post('/api/curriculum/analyse', { topic });
       const { clarity, questions, options } = response.data;
@@ -225,15 +223,7 @@ function Home() {
                 </p>
               </div>
 
-              {/* Sign in prompt banner */}
-              {showSignInPrompt && !isAuthenticated && (
-                <div className="max-w-3xl mx-auto p-4 bg-accent-500/20 border border-accent-500 rounded-lg flex items-center justify-between gap-4">
-                  <p className="text-white font-body">
-                    Sign in to start learning — it only takes a second.
-                  </p>
-                  <GoogleSignInButton />
-                </div>
-              )}
+          
 
               {/* Prompt Bar */}
               <form onSubmit={handleSubmit} className="max-w-3xl mx-auto">
