@@ -33,7 +33,7 @@ const moduleSchema = new mongoose.Schema({
   },
   content: {
     type: String,
-    required: true
+    required: false
   },
   video: {
     videoId: String,

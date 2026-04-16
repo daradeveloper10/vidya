@@ -328,7 +328,7 @@ Time commitment: ${duration}`;
 
     const message = await callAnthropicWithRetry({
       model: 'claude-sonnet-4-20250514',
-      max_tokens: 4096,
+      max_tokens: 2048,
       messages: [{
         role: 'user',
         content: `${contextPrompt}
@@ -339,8 +339,7 @@ Create a structured learning curriculum as a JSON object with this exact format:
     {
       "title": "Module title",
       "estimatedTime": "10 minutes",
-      "description": "Brief description of what this module covers",
-      "content": "Detailed lesson content in markdown format. Include explanations, examples, and key concepts."
+      "description": "Brief description of what this module covers — 2 sentences max."
     }
   ]
 }
@@ -348,10 +347,7 @@ Create a structured learning curriculum as a JSON object with this exact format:
 Rules:
 - Generate a maximum of 8 modules regardless of the total hours. Each module should cover a broad topic area.
 - Keep descriptions concise — maximum 2 sentences each.
-- Keep lesson descriptions to 1 sentence each.
 - Each module should build on previous ones
-- Content should be clear, engaging, and educational
-- Use markdown formatting in content (headers, lists, bold, etc.)
 - Estimated time should be realistic for each module
 
 Respond ONLY with the JSON object, no other text.`
