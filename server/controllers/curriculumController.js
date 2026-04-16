@@ -346,7 +346,9 @@ Create a structured learning curriculum as a JSON object with this exact format:
 }
 
 Rules:
-- Number of modules should match the time commitment (2min=1 module, 10min=2-3, 30min=4-5, 2hrs=6-8, 10hrs=10-15, 20hrs=15-20, 30hrs=20-25)
+- Generate a maximum of 8 modules regardless of the total hours. Each module should cover a broad topic area.
+- Keep descriptions concise — maximum 2 sentences each.
+- Keep lesson descriptions to 1 sentence each.
 - Each module should build on previous ones
 - Content should be clear, engaging, and educational
 - Use markdown formatting in content (headers, lists, bold, etc.)
@@ -367,8 +369,16 @@ Respond ONLY with the JSON object, no other text.`
 
     console.log('🧹 Cleaned JSON:', cleanJson.substring(0, 200) + '...');
 
-    // Parse Claude's JSON response
-    const curriculumData = JSON.parse(cleanJson);
+    // Parse Claude's JSON response with error handling
+    let curriculumData;
+    try {
+      curriculumData = JSON.parse(cleanJson);
+    } catch (err) {
+      console.error('❌ Curriculum generation error:', err.message);
+      return res.status(500).json({ 
+        message: 'Failed to generate curriculum. Please try again with a more specific topic.' 
+      });
+    }
 
     // Generate clean display title and subtitle
     console.log('🎨 Generating display title...');
