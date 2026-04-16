@@ -383,23 +383,27 @@ Respond ONLY with the JSON object, no other text.`
       max_tokens: 200,
       messages: [{
         role: 'user',
-        content: `Given this learning topic: "${topic}"
+        content: `Given this original learning topic input: "${topic}"
+${clarificationAnswers && clarificationAnswers.length > 0 ? `The user clarified their intent with these answers: ${clarificationAnswers.join(', ')}` : ''}
 And duration: ${duration}
 
-Generate a clean display title and subtitle in JSON format:
+Using the original topic AND the clarification answers together, infer what the user actually wants to learn and generate an accurate display title and subtitle.
+
+Generate in JSON format:
 {
   "displayTitle": "Clean, concise title (max 4-5 words)",
   "subtitle": "Duration-based subtitle"
 }
 
 Rules for displayTitle:
-- Remove "teach me", "I want to learn", "explain", "help me understand"
+- Use the clarification answers to correct any typos or vague terms in the original topic
+- Remove filler words like "teach me", "I want to learn", "explain"
 - Capitalize properly
 - Keep concise (max 4-5 words)
 - Examples:
   "teach me the basics of machine learning" → "Machine Learning Basics"
   "I want to learn negotiation from scratch" → "Negotiation Fundamentals"
-  "explain quantum physics simply" → "Quantum Physics Simplified"
+  "agile cldc" + clarification "SDLC" → "Agile SDLC Methodology"
 
 Rules for subtitle:
 - 10min → "A quick 10-minute overview"
