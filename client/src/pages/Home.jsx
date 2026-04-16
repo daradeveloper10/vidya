@@ -96,8 +96,7 @@ function Home() {
   const requireAuth = (topic) => {
     if (!isAuthenticated) {
       localStorage.setItem('pendingTopic', topic);
-      setShowSignInPrompt(true);
-      window.scrollTo({ top: 0, behavior: 'smooth' });
+      navigate('/signin');
       return false;
     }
     return true;
