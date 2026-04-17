@@ -18,7 +18,7 @@ router.get('/', async (req, res) => {
 // IMPORTANT: defined BEFORE /:slug to avoid route conflict
 router.get('/enrolled', isAuthenticated, async (req, res) => {
   try {
-    const userPaths = await UserPath.find({ userId: req.user._id })
+    const userPaths = await UserPath.find({ userId: req.user.id })
       .populate('pathId')
       .lean();
     res.json(userPaths);
@@ -32,7 +32,7 @@ router.get('/:slug', isAuthenticated, async (req, res) => {
   try {
     const path = await LearningPath.findOne({ slug: req.params.slug });
     if (!path) return res.status(404).json({ error: 'Path not found' });
-    const userPath = await UserPath.findOne({ userId: req.user._id, pathId: path._id });
+    const userPath = await UserPath.findOne({ userId: req.user.id, pathId: path._id });
     res.json({ path, userPath: userPath || null });
   } catch (err) {
     res.status(500).json({ error: 'Failed to fetch path' });
@@ -45,13 +45,13 @@ router.post('/:slug/start', isAuthenticated, async (req, res) => {
     const path = await LearningPath.findOne({ slug: req.params.slug });
     if (!path) return res.status(404).json({ error: 'Path not found' });
 
-    let userPath = await UserPath.findOne({ userId: req.user._id, pathId: path._id });
+    let userPath = await UserPath.findOne({ userId: req.user.id, pathId: path._id });
     if (userPath) {
       return res.json({ userPath, alreadyEnrolled: true });
     }
 
     userPath = await UserPath.create({
-      userId: req.user._id,
+      userId: req.user.id,
       pathId: path._id,
       currentCourseIndex: 0,
       completedCourses: [],
@@ -71,7 +71,7 @@ router.post('/:slug/complete-course', isAuthenticated, async (req, res) => {
     const path = await LearningPath.findOne({ slug: req.params.slug });
     if (!path) return res.status(404).json({ error: 'Path not found' });
 
-    const userPath = await UserPath.findOne({ userId: req.user._id, pathId: path._id });
+    const userPath = await UserPath.findOne({ userId: req.user.id, pathId: path._id });
     if (!userPath) return res.status(404).json({ error: 'Not enrolled in this path' });
 
     const currentIndex = userPath.currentCourseIndex;
