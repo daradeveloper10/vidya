@@ -20,13 +20,10 @@ function AppHeader() {
       >
         Vidya
       </h1>
-      <div className="flex items-center gap-2 sm:gap-4">
-        <span className="hidden md:block text-primary-100 font-body text-sm">
-          Hello, {user?.name?.split(' ')[0]}
-        </span>
+      <div className="flex items-center gap-2">
         <Link
           to="/dashboard"
-          className="px-3 py-2 sm:px-4 sm:py-2 bg-accent-500 text-white font-semibold rounded-lg hover:bg-accent-600 transition-colors text-sm"
+          className="px-3 py-2 bg-accent-500 text-white font-semibold rounded-lg hover:bg-accent-600 transition-colors text-sm"
         >
           Dashboard
         </Link>
