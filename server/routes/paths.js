@@ -2,7 +2,7 @@ const express = require('express');
 const router = express.Router();
 const LearningPath = require('../models/LearningPath');
 const UserPath = require('../models/UserPath');
-const auth = require('../middleware/auth');
+const { isAuthenticated } = require('../middleware/auth');
 
 // GET /api/paths — all paths (no auth needed)
 router.get('/', async (req, res) => {
@@ -16,7 +16,7 @@ router.get('/', async (req, res) => {
 
 // GET /api/paths/enrolled — user's enrolled paths
 // IMPORTANT: defined BEFORE /:slug to avoid route conflict
-router.get('/enrolled', auth, async (req, res) => {
+router.get('/enrolled', isAuthenticated, async (req, res) => {
   try {
     const userPaths = await UserPath.find({ userId: req.user._id })
       .populate('pathId')
@@ -28,7 +28,7 @@ router.get('/enrolled', auth, async (req, res) => {
 });
 
 // GET /api/paths/:slug — single path with user progress
-router.get('/:slug', auth, async (req, res) => {
+router.get('/:slug', isAuthenticated, async (req, res) => {
   try {
     const path = await LearningPath.findOne({ slug: req.params.slug });
     if (!path) return res.status(404).json({ error: 'Path not found' });
@@ -40,7 +40,7 @@ router.get('/:slug', auth, async (req, res) => {
 });
 
 // POST /api/paths/:slug/start — enroll user in path
-router.post('/:slug/start', auth, async (req, res) => {
+router.post('/:slug/start', isAuthenticated, async (req, res) => {
   try {
     const path = await LearningPath.findOne({ slug: req.params.slug });
     if (!path) return res.status(404).json({ error: 'Path not found' });
@@ -65,7 +65,7 @@ router.post('/:slug/start', auth, async (req, res) => {
 });
 
 // POST /api/paths/:slug/complete-course — mark course done and advance
-router.post('/:slug/complete-course', auth, async (req, res) => {
+router.post('/:slug/complete-course', isAuthenticated, async (req, res) => {
   try {
     const { curriculumId } = req.body;
     const path = await LearningPath.findOne({ slug: req.params.slug });
