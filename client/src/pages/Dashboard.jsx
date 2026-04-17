@@ -145,7 +145,7 @@ function Dashboard() {
 
           {inProgressCurriculum ? (
             <div className="bg-gradient-to-br from-accent-500/20 to-accent-600/10 backdrop-blur-sm border-2 border-accent-500/50 rounded-xl p-8">
-              <div className="flex items-center justify-between">
+              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
                 <div className="space-y-2">
                   <p className="text-accent-300 font-body text-sm uppercase tracking-wide">Continue Learning</p>
                   <h2 className="text-3xl font-heading font-bold text-white">
@@ -160,7 +160,7 @@ function Dashboard() {
                 </div>
                 <button
                   onClick={() => navigate(`/module/${inProgressCurriculum._id}/${inProgressCurriculum.currentModuleIndex}`)}
-                  className="px-8 py-4 bg-accent-500 text-white font-semibold rounded-lg hover:bg-accent-600 transition-all duration-200 shadow-lg hover:shadow-xl font-body text-lg"
+                  className="px-6 py-3 bg-accent-500 text-white font-semibold rounded-lg hover:bg-accent-600 transition-all duration-200 shadow-lg font-body flex-shrink-0"
                 >
                   Continue →
                 </button>
@@ -180,14 +180,14 @@ function Dashboard() {
 
         {/* ZONE 2: Your Learning */}
         <section className="space-y-6">
-          <div className="flex items-center justify-between">
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
             <h2 className="text-3xl font-heading font-bold text-white">Your Learning</h2>
             <input
               type="text"
               placeholder="Search your curricula..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="px-4 py-2 bg-white/10 backdrop-blur-sm border border-primary-700 rounded-lg text-white placeholder-primary-300 focus:outline-none focus:border-accent-500 transition-colors font-body"
+              className="w-full sm:w-auto px-4 py-2 bg-white/10 backdrop-blur-sm border border-primary-700 rounded-lg text-white placeholder-primary-300 focus:outline-none focus:border-accent-500 transition-colors font-body"
             />
           </div>
 

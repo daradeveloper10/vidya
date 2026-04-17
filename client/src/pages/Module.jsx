@@ -475,12 +475,12 @@ function Module() {
 
       <AppHeader />
 
-      <main className="max-w-4xl mx-auto px-6 py-12 space-y-12">
+      <main className="max-w-4xl mx-auto px-4 sm:px-6 py-8 sm:py-12 space-y-8 sm:space-y-12">
         {!showQuiz && !showSummary && (
           <section className="space-y-8">
             <div className="space-y-4">
-              <h2 className="text-4xl font-heading font-bold text-white">{currentModule.title}</h2>
-              <p className="text-xl text-primary-200 font-body">{currentModule.description}</p>
+              <h2 className="text-2xl sm:text-4xl font-heading font-bold text-white">{currentModule.title}</h2>
+              <p className="text-base sm:text-xl text-primary-200 font-body">{currentModule.description}</p>
               <p className="text-primary-400 font-body">⏱ {currentModule.estimatedTime}</p>
             </div>
 

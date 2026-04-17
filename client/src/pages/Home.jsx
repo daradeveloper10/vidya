@@ -186,7 +186,9 @@ function Home() {
             </button>
           </div>
         ) : (
-          <GoogleSignInButton />
+          <div className="scale-90 sm:scale-100 origin-right">
+            <GoogleSignInButton />
+          </div>
         )}
       </header>
 
