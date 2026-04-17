@@ -6,7 +6,7 @@ function GoogleSignInButton() {
   return (
     <button
       onClick={login}
-      className="flex items-center justify-center gap-3 px-8 py-4 bg-white border-2 border-primary-600 text-primary-900 font-semibold rounded-lg hover:bg-primary-50 transition-all duration-200 shadow-md hover:shadow-lg"
+      className="flex items-center justify-center gap-3 px-8 py-4 bg-white border-2 border-primary-600 text-primary-900 font-semibold rounded-lg hover:bg-primary-50 transition-all duration-200 shadow-md hover:shadow-lg w-full"
     >
       <svg className="w-6 h-6" viewBox="0 0 24 24">
         <path
