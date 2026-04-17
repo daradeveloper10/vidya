@@ -3,6 +3,7 @@ import GoogleSignInButton from '../components/ui/GoogleSignInButton';
 import SignInModal from '../components/ui/SignInModal';
 import ClarificationChat from '../components/curriculum/ClarificationChat';
 import TimeSelection from '../components/curriculum/TimeSelection';
+import PathBuilder from '../components/curriculum/PathBuilder';
 import { Link, useNavigate } from 'react-router-dom';
 import { useState, useEffect, useCallback } from 'react';
 import api from '../services/api';
@@ -16,6 +17,7 @@ function Home() {
   const [clarificationOptions, setClarificationOptions] = useState([]);
   const [clarificationAnswers, setClarificationAnswers] = useState([]);
   const [showSignInModal, setShowSignInModal] = useState(false);
+  const [pathBuilderData, setPathBuilderData] = useState(null);
 
   // Spark cards state
   const [sparkTopics, setSparkTopics] = useState([]);
@@ -152,12 +154,36 @@ function Home() {
     setFlowState('timeSelection');
   };
 
+  const DURATIONS_REQUIRING_PATH = ['2hrs', '5hrs', '10hrs', '20hrs', '30hrs'];
+
   const handleTimeSelection = (duration) => {
+    if (DURATIONS_REQUIRING_PATH.includes(duration)) {
+      setPathBuilderData({ topic: topicInput, duration, clarificationAnswers });
+      setFlowState('pathBuilding');
+    } else {
+      navigate('/learn', {
+        state: { topic: topicInput, duration, clarificationAnswers }
+      });
+    }
+  };
+
+  const handlePathConfirm = (pathData) => {
     navigate('/learn', {
       state: {
         topic: topicInput,
-        duration: duration,
-        clarificationAnswers: clarificationAnswers
+        duration: pathBuilderData.duration,
+        clarificationAnswers,
+        pathData,
+      }
+    });
+  };
+
+  const handlePathSkip = () => {
+    navigate('/learn', {
+      state: {
+        topic: topicInput,
+        duration: pathBuilderData.duration,
+        clarificationAnswers,
       }
     });
   };
@@ -219,6 +245,16 @@ function Home() {
 
         {flowState === 'timeSelection' && (
           <TimeSelection onSelect={handleTimeSelection} />
+        )}
+
+        {flowState === 'pathBuilding' && pathBuilderData && (
+          <PathBuilder
+            topic={pathBuilderData.topic}
+            duration={pathBuilderData.duration}
+            clarificationAnswers={clarificationAnswers}
+            onConfirm={handlePathConfirm}
+            onSkip={handlePathSkip}
+          />
         )}
 
         {flowState === 'initial' && (

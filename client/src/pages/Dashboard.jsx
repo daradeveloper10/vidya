@@ -9,6 +9,7 @@ function Dashboard() {
   const navigate = useNavigate();
   const [curricula, setCurricula] = useState([]);
   const [userPaths, setUserPaths] = useState([]);
+  const [userGeneratedPaths, setUserGeneratedPaths] = useState([]);
   const [loading, setLoading] = useState(true);
 
   const SkeletonCard = () => (
@@ -28,6 +29,7 @@ function Dashboard() {
   useEffect(() => {
     fetchCurricula();
     fetchUserPaths();
+    fetchUserGeneratedPaths();
   }, []);
 
   const fetchCurricula = async () => {
@@ -48,6 +50,15 @@ function Dashboard() {
       setUserPaths(response.data);
     } catch (error) {
       console.error('Error fetching user paths:', error);
+    }
+  };
+
+  const fetchUserGeneratedPaths = async () => {
+    try {
+      const response = await api.get('/api/user-paths');
+      setUserGeneratedPaths(response.data);
+    } catch (error) {
+      console.error('Error fetching user generated paths:', error);
     }
   };
 
@@ -173,7 +184,75 @@ function Dashboard() {
           )}
         </section>
 
-        {/* ZONE 2: My Paths */}
+        {/* ZONE 2: My Custom Paths */}
+        {userGeneratedPaths.length > 0 && (
+          <section className="space-y-6">
+            <h2 className="text-3xl font-heading font-bold text-white">My Custom Paths</h2>
+            <div className="space-y-4">
+              {userGeneratedPaths.map((path) => {
+                const completedCount = path.curricula.filter(c => c.completed).length;
+                const totalCount = path.curricula.length;
+                const progressPercent = totalCount > 0 ? Math.round((completedCount / totalCount) * 100) : 0;
+                const currentCurriculum = path.curricula[path.currentCurriculumIndex];
+
+                return (
+                  <div
+                    key={path._id}
+                    className="bg-gradient-to-br from-white/10 to-white/5 backdrop-blur-sm border border-primary-700 rounded-xl p-6 hover:border-accent-500 transition-all duration-200"
+                  >
+                    <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+                      <div className="space-y-3 flex-1">
+                        <div>
+                          <p className="text-accent-300 font-body text-xs uppercase tracking-wide mb-1">Custom Learning Path</p>
+                          <h3 className="text-xl font-heading font-bold text-white">{path.name}</h3>
+                          {path.description && (
+                            <p className="text-primary-300 font-body text-sm mt-1">{path.description}</p>
+                          )}
+                        </div>
+                        <div className="space-y-1">
+                          <div className="flex justify-between text-sm font-body">
+                            <span className="text-primary-300">{completedCount} of {totalCount} curricula complete</span>
+                            <span className="text-accent-400 font-semibold">{progressPercent}%</span>
+                          </div>
+                          <div className="w-full bg-primary-800 rounded-full h-2">
+                            <div
+                              className="bg-accent-500 h-2 rounded-full transition-all duration-300"
+                              style={{ width: `${progressPercent}%` }}
+                            />
+                          </div>
+                        </div>
+                        {path.status !== 'completed' && currentCurriculum && (
+                          <p className="text-primary-300 font-body text-sm">
+                            Up next: <span className="text-white font-semibold">{currentCurriculum.title || currentCurriculum.topic}</span>
+                            <span className="text-primary-400"> • {currentCurriculum.duration}</span>
+                          </p>
+                        )}
+                        {path.status === 'completed' && (
+                          <p className="text-green-400 font-body text-sm">🏆 Path completed!</p>
+                        )}
+                      </div>
+                      <div className="flex-shrink-0">
+                        {path.status !== 'completed' && currentCurriculum?.curriculumId && (
+                          <button
+                            onClick={() => navigate(`/module/${currentCurriculum.curriculumId}/0`)}
+                            className="px-6 py-3 bg-accent-500 text-white font-semibold rounded-lg hover:bg-accent-600 transition-all duration-200 font-body"
+                          >
+                            Resume →
+                          </button>
+                        )}
+                        {path.status === 'completed' && (
+                          <span className="text-green-400 font-body">🏆 Complete</span>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </section>
+        )}
+
+        {/* ZONE 3: My Learning Paths */}
         {userPaths.length > 0 && (
           <section className="space-y-6">
             <h2 className="text-3xl font-heading font-bold text-white">My Learning Paths</h2>
@@ -243,7 +322,7 @@ function Dashboard() {
           </section>
         )}
 
-        {/* ZONE 3: Your Learning */}
+        {/* ZONE 4: Your Learning */}
         <section className="space-y-6">
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
             <h2 className="text-3xl font-heading font-bold text-white">Your Learning</h2>
@@ -367,7 +446,7 @@ function Dashboard() {
           )}
         </section>
 
-        {/* ZONE 4: Discover */}
+        {/* ZONE 5: Discover */}
         <section className="space-y-6">
           <h2 className="text-3xl font-heading font-bold text-white">Continue Your Journey</h2>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">

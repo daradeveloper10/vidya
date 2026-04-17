@@ -12,6 +12,7 @@ const moduleRoutes = require('./routes/module');
 const videoRoutes = require('./routes/video');
 const topicsRoutes = require('./routes/topics');
 const pathsRoutes = require('./routes/paths');
+const userPathsRoutes = require('./routes/userPaths');
 const { startTopicRefreshJob } = require('./jobs/topicRefreshJob');
 
 // Initialize Express app
@@ -112,6 +113,7 @@ app.use('/api/module', moduleRoutes);
 app.use('/api/video', videoRoutes);
 app.use('/api/topics', topicsRoutes);
 app.use('/api/paths', pathsRoutes);
+app.use('/api/user-paths', userPathsRoutes);
 
 // Health check route
 app.get('/health', (req, res) => {
