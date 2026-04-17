@@ -8,6 +8,7 @@ function Dashboard() {
   const { user } = useAuth();
   const navigate = useNavigate();
   const [curricula, setCurricula] = useState([]);
+  const [userPaths, setUserPaths] = useState([]);
   const [loading, setLoading] = useState(true);
 
   const SkeletonCard = () => (
@@ -26,22 +27,27 @@ function Dashboard() {
 
   useEffect(() => {
     fetchCurricula();
+    fetchUserPaths();
   }, []);
 
   const fetchCurricula = async () => {
     try {
-      console.log('Fetching curricula...');
       const response = await api.get('/api/curriculum/user/all');
-      console.log('Curricula response:', response.data);
       setCurricula(response.data);
     } catch (error) {
       console.error('Error fetching curricula:', error);
-      console.error('Error details:', error.response?.data);
-      if (error.response?.status === 401) {
-        navigate('/');
-      }
+      if (error.response?.status === 401) navigate('/');
     } finally {
       setLoading(false);
+    }
+  };
+
+  const fetchUserPaths = async () => {
+    try {
+      const response = await api.get('/api/paths/enrolled');
+      setUserPaths(response.data);
+    } catch (error) {
+      console.error('Error fetching user paths:', error);
     }
   };
 
@@ -86,21 +92,9 @@ function Dashboard() {
   const inProgressCurriculum = getInProgressCurriculum();
 
   const featuredPaths = [
-    {
-      title: "The Founder Stack",
-      description: "Essential skills for building and scaling a startup",
-      topics: ["Product-Market Fit", "Fundraising", "Team Building"]
-    },
-    {
-      title: "The AI Literacy Path",
-      description: "Understand AI from fundamentals to practical applications",
-      topics: ["Machine Learning Basics", "Neural Networks", "AI Ethics"]
-    },
-    {
-      title: "The Investor's Mind",
-      description: "Build wealth through smart investing strategies",
-      topics: ["Portfolio Theory", "Risk Management", "Market Psychology"]
-    }
+    { slug: 'founder-stack', title: "The Founder Stack", description: "Essential skills for building and scaling a startup", topics: ["Product-Market Fit", "Fundraising", "Team Building"] },
+    { slug: 'ai-literacy', title: "The AI Literacy Path", description: "Understand AI from fundamentals to practical applications", topics: ["Machine Learning Basics", "Neural Networks", "AI Ethics"] },
+    { slug: 'investors-mind', title: "The Investor's Mind", description: "Build wealth through smart investing strategies", topics: ["Portfolio Theory", "Risk Management", "Market Psychology"] }
   ];
 
   const formatDate = (date) => {
@@ -136,7 +130,8 @@ function Dashboard() {
     <div className="min-h-screen bg-gradient-to-br from-primary-950 via-primary-900 to-primary-800">
       <AppHeader />
 
-      <main className="max-w-7xl mx-auto px-6 py-12 space-y-16">
+      <main className="max-w-7xl mx-auto px-4 sm:px-6 py-8 sm:py-12 space-y-16">
+
         {/* ZONE 1: Return Zone */}
         <section className="space-y-6">
           <h1 className="text-4xl font-heading font-bold text-white">
@@ -178,7 +173,77 @@ function Dashboard() {
           )}
         </section>
 
-        {/* ZONE 2: Your Learning */}
+        {/* ZONE 2: My Paths */}
+        {userPaths.length > 0 && (
+          <section className="space-y-6">
+            <h2 className="text-3xl font-heading font-bold text-white">My Learning Paths</h2>
+            <div className="space-y-4">
+              {userPaths.map((userPath) => {
+                const path = userPath.pathId;
+                const completedCount = userPath.completedCourses?.length || 0;
+                const totalCourses = path?.courses?.length || 0;
+                const progressPercent = totalCourses > 0 ? Math.round((completedCount / totalCourses) * 100) : 0;
+                const currentCourse = path?.courses?.[userPath.currentCourseIndex];
+
+                return (
+                  <div
+                    key={userPath._id}
+                    className="bg-gradient-to-br from-white/10 to-white/5 backdrop-blur-sm border border-primary-700 rounded-xl p-6 hover:border-accent-500 transition-all duration-200"
+                  >
+                    <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+                      <div className="space-y-3 flex-1">
+                        <div>
+                          <p className="text-accent-300 font-body text-xs uppercase tracking-wide mb-1">Learning Path</p>
+                          <h3 className="text-xl font-heading font-bold text-white">{path?.title}</h3>
+                        </div>
+                        <div className="space-y-1">
+                          <div className="flex justify-between text-sm font-body">
+                            <span className="text-primary-300">{completedCount} of {totalCourses} courses complete</span>
+                            <span className="text-accent-400 font-semibold">{progressPercent}%</span>
+                          </div>
+                          <div className="w-full bg-primary-800 rounded-full h-2">
+                            <div
+                              className="bg-accent-500 h-2 rounded-full transition-all duration-300"
+                              style={{ width: `${progressPercent}%` }}
+                            />
+                          </div>
+                        </div>
+                        {!userPath.completed && currentCourse && (
+                          <p className="text-primary-300 font-body text-sm">
+                            Up next: <span className="text-white font-semibold">{currentCourse.title}</span>
+                          </p>
+                        )}
+                        {userPath.completed && (
+                          <p className="text-green-400 font-body text-sm">🏆 Path completed!</p>
+                        )}
+                      </div>
+                      <div className="flex gap-3 flex-shrink-0">
+                        {!userPath.completed && (
+                          <button
+                            onClick={() => navigate(`/path/${path.slug}`)}
+                            className="px-6 py-3 bg-accent-500 text-white font-semibold rounded-lg hover:bg-accent-600 transition-all duration-200 font-body"
+                          >
+                            Resume Path →
+                          </button>
+                        )}
+                        {userPath.completed && (
+                          <button
+                            onClick={() => navigate(`/path/${path.slug}`)}
+                            className="px-6 py-3 bg-primary-700 text-white font-semibold rounded-lg hover:bg-primary-600 transition-all duration-200 font-body"
+                          >
+                            View Path
+                          </button>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </section>
+        )}
+
+        {/* ZONE 3: Your Learning */}
         <section className="space-y-6">
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
             <h2 className="text-3xl font-heading font-bold text-white">Your Learning</h2>
@@ -191,7 +256,6 @@ function Dashboard() {
             />
           </div>
 
-          {/* Active Curricula */}
           {filteredActiveCurricula.length > 0 && (
             <div className="space-y-4">
               <h3 className="text-xl font-heading font-semibold text-primary-200">In Progress</h3>
@@ -215,7 +279,6 @@ function Dashboard() {
                           {curriculum.modules.length} modules
                         </p>
                       </div>
-
                       <div className="space-y-2">
                         <div className="flex justify-between text-sm font-body">
                           <span className="text-primary-300">Progress</span>
@@ -228,11 +291,9 @@ function Dashboard() {
                           />
                         </div>
                       </div>
-
                       <p className="text-primary-400 font-body text-sm">
                         Last accessed {formatDate(curriculum.updatedAt)}
                       </p>
-
                       <div className="flex gap-2">
                         <button className="flex-1 px-4 py-2 bg-accent-500/20 text-accent-400 font-semibold rounded-lg hover:bg-accent-500 hover:text-white transition-all duration-200 font-body">
                           Continue
@@ -252,7 +313,6 @@ function Dashboard() {
             </div>
           )}
 
-          {/* Completed Curricula */}
           {filteredCompletedCurricula.length > 0 && (
             <div className="space-y-4">
               <h3 className="text-xl font-heading font-semibold text-primary-200">Completed</h3>
@@ -277,11 +337,9 @@ function Dashboard() {
                       </div>
                       <div className="text-4xl">🏆</div>
                     </div>
-
                     <p className="text-primary-400 font-body text-sm">
                       Completed {formatDate(curriculum.updatedAt)}
                     </p>
-
                     <div className="flex gap-2">
                       <button className="flex-1 px-4 py-2 bg-primary-700/50 text-primary-200 font-semibold rounded-lg hover:bg-primary-700 hover:text-white transition-all duration-200 font-body">
                         Review
@@ -309,7 +367,7 @@ function Dashboard() {
           )}
         </section>
 
-        {/* ZONE 3: Discover */}
+        {/* ZONE 4: Discover */}
         <section className="space-y-6">
           <h2 className="text-3xl font-heading font-bold text-white">Continue Your Journey</h2>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
@@ -329,16 +387,17 @@ function Dashboard() {
                     </span>
                   ))}
                 </div>
-                <Link
-                  to="/"
+                <button
+                  onClick={() => navigate(`/path/${path.slug}`)}
                   className="block w-full px-4 py-2 bg-accent-500/20 text-accent-400 font-semibold rounded-lg hover:bg-accent-500 hover:text-white transition-all duration-200 text-center font-body"
                 >
-                  Start Path
-                </Link>
+                  View Path
+                </button>
               </div>
             ))}
           </div>
         </section>
+
       </main>
     </div>
   );
