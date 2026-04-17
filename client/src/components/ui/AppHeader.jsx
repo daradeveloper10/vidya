@@ -21,7 +21,7 @@ function AppHeader() {
         Vidya
       </h1>
       <div className="flex items-center gap-2 sm:gap-4">
-        <span className="hidden sm:block text-primary-100 font-body text-sm">
+        <span className="hidden md:block text-primary-100 font-body text-sm">
           Hello, {user?.name?.split(' ')[0]}
         </span>
         <Link
