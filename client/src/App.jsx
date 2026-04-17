@@ -7,6 +7,7 @@ import Module from './pages/Module'
 import Dashboard from './pages/Dashboard'
 import Complete from './pages/Complete'
 import Passport from './pages/Passport'
+import PathDetail from './pages/PathDetail'
 import NotFound from './pages/NotFound'
 import AuthCallback from './pages/AuthCallback'
 
@@ -23,6 +24,7 @@ function App() {
           <Route path="/dashboard" element={<Dashboard />} />
           <Route path="/complete/:id" element={<Complete />} />
           <Route path="/passport" element={<Passport />} />
+          <Route path="/path/:slug" element={<PathDetail />} />
           <Route path="*" element={<NotFound />} />
         </Routes>
       </Router>

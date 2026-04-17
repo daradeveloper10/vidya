@@ -7,6 +7,66 @@ import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import Paywall from '../components/ui/Paywall';
 
+function PathContinuePrompt({ pathSlug, curriculumId, onContinue, onDismiss }) {
+  const [loading, setLoading] = useState(false);
+  const [nextCourse, setNextCourse] = useState(null);
+  const [pathDone, setPathDone] = useState(false);
+
+  useEffect(() => {
+    async function completeCourse() {
+      try {
+        setLoading(true);
+        const response = await api.post(`/api/paths/${pathSlug}/complete-course`, { curriculumId });
+        setNextCourse(response.data.nextCourse);
+        setPathDone(response.data.pathCompleted);
+      } catch (err) {
+        console.error('Error completing path course:', err);
+      } finally {
+        setLoading(false);
+      }
+    }
+    completeCourse();
+  }, []);
+
+  if (loading) return (
+    <div className="p-6 bg-accent-500/10 border border-accent-500/30 rounded-xl text-center">
+      <p className="text-primary-300 font-body">Updating your path progress...</p>
+    </div>
+  );
+
+  return (
+    <div className="p-6 bg-accent-500/10 border border-accent-500/30 rounded-xl space-y-4">
+      {pathDone ? (
+        <>
+          <p className="text-accent-400 font-heading font-bold text-xl">🏆 Path Complete!</p>
+          <p className="text-primary-200 font-body">You have completed all courses in this learning path.</p>
+        </>
+      ) : (
+        <>
+          <p className="text-accent-400 font-heading font-bold text-xl">Course Complete!</p>
+          <p className="text-primary-200 font-body">
+            Next up in your path: <span className="text-white font-semibold">{nextCourse?.title}</span>
+          </p>
+        </>
+      )}
+      <div className="flex gap-3">
+        <button
+          onClick={onContinue}
+          className="flex-1 px-6 py-3 bg-accent-500 text-white font-semibold rounded-lg hover:bg-accent-600 transition-all font-body"
+        >
+          {pathDone ? 'View Path' : 'Continue Path →'}
+        </button>
+        <button
+          onClick={onDismiss}
+          className="px-6 py-3 text-primary-300 hover:text-white transition-colors font-body"
+        >
+          Dismiss
+        </button>
+      </div>
+    </div>
+  );
+}
+
 function Module() {
   console.log('Module version: 2.0 - new messages active');
   
@@ -124,6 +184,7 @@ function Module() {
   const [showPaywall, setShowPaywall] = useState(false);
   const [video, setVideo] = useState(null);
   const [loadingVideo, setLoadingVideo] = useState(false);
+  const [showPathPrompt, setShowPathPrompt] = useState(false);
 
   const currentModule = curriculum?.modules?.[moduleIndex] || null;
 
@@ -684,6 +745,15 @@ function Module() {
                 <li>• Mastered key concepts in {currentModule.estimatedTime}</li>
                 <li>• Ready to build on this knowledge</li>
               </ul>
+
+              {curriculum?.pathSlug && moduleIndex === curriculum.modules.length - 1 && !showPathPrompt && (
+                <PathContinuePrompt
+                  pathSlug={curriculum.pathSlug}
+                  curriculumId={curriculumId}
+                  onContinue={() => navigate(`/path/${curriculum.pathSlug}`)}
+                  onDismiss={() => setShowPathPrompt(true)}
+                />
+              )}
 
               {moduleIndex < curriculum.modules.length - 1 && (
                 <div className="pt-4 border-t border-primary-700">

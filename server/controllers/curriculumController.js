@@ -271,7 +271,7 @@ exports.deleteCurriculum = async (req, res) => {
 // Generate curriculum
 exports.generate = async (req, res) => {
   try {
-    const { topic, duration, clarificationAnswers } = req.body;
+    const { topic, duration, clarificationAnswers, pathSlug, courseIndex } = req.body;
     const userId = req.user._id;
 
     if (!topic || !duration) {
@@ -428,7 +428,9 @@ Respond ONLY with the JSON object.`
       subtitle: titleData.subtitle,
       duration,
       clarificationAnswers: clarificationAnswers || [],
-      modules: curriculumData.modules
+      modules: curriculumData.modules,
+      pathSlug: pathSlug || null,
+      courseIndex: courseIndex !== undefined ? courseIndex : null
     });
 
     console.log('✅ Curriculum saved to database:', curriculum._id);

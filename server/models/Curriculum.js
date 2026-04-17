@@ -81,6 +81,8 @@ const curriculumSchema = new mongoose.Schema({
     type: Boolean,
     default: false
   },
+  pathSlug: { type: String, default: null },
+  courseIndex: { type: Number, default: null },
   createdAt: {
     type: Date,
     default: Date.now

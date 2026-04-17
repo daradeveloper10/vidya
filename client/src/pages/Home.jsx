@@ -66,6 +66,13 @@ function Home() {
   // Check for pending topic after login
   useEffect(() => {
     if (isAuthenticated) {
+      const pendingPath = localStorage.getItem('pendingPath');
+      if (pendingPath) {
+        localStorage.removeItem('pendingPath');
+        navigate(`/path/${pendingPath}`);
+        return;
+      }
+
       const pendingTopic = localStorage.getItem('pendingTopic');
       if (pendingTopic) {
         localStorage.removeItem('pendingTopic');
@@ -78,16 +85,19 @@ function Home() {
 
   const featuredPaths = [
     {
+      slug: 'founder-stack',
       title: "The Founder Stack",
       description: "Essential skills for building and scaling a startup",
       topics: ["Product-Market Fit", "Fundraising", "Team Building"]
     },
     {
+      slug: 'ai-literacy',
       title: "The AI Literacy Path",
       description: "Understand AI from fundamentals to practical applications",
       topics: ["Machine Learning Basics", "Neural Networks", "AI Ethics"]
     },
     {
+      slug: 'investors-mind',
       title: "The Investor's Mind",
       description: "Build wealth through smart investing strategies",
       topics: ["Portfolio Theory", "Risk Management", "Market Psychology"]
@@ -126,11 +136,8 @@ function Home() {
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
-  const handlePathClick = (firstTopic) => {
-    const prompt = `Teach me ${firstTopic}`;
-    if (!requireAuth(prompt)) return;
-    setTopicInput(prompt);
-    window.scrollTo({ top: 0, behavior: 'smooth' });
+  const handlePathClick = (slug) => {
+    navigate(`/path/${slug}`);
   };
 
   const handleSubmit = async (e) => {
@@ -292,7 +299,7 @@ function Home() {
                 {featuredPaths.map((path, index) => (
                   <div
                     key={index}
-                    onClick={() => handlePathClick(path.topics[0])}
+                    onClick={() => handlePathClick(path.slug)}
                     className="p-8 bg-gradient-to-br from-white/10 to-white/5 backdrop-blur-sm border border-primary-700 rounded-xl hover:border-accent-500 hover:shadow-xl transition-all duration-200 space-y-4 group cursor-pointer"
                   >
                     <h4 className="text-2xl font-heading font-bold text-white group-hover:text-accent-400 transition-colors">

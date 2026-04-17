@@ -11,6 +11,7 @@ const curriculumRoutes = require('./routes/curriculum');
 const moduleRoutes = require('./routes/module');
 const videoRoutes = require('./routes/video');
 const topicsRoutes = require('./routes/topics');
+const pathsRoutes = require('./routes/paths');
 const { startTopicRefreshJob } = require('./jobs/topicRefreshJob');
 
 // Initialize Express app
@@ -110,6 +111,7 @@ app.use('/api/curriculum', curriculumRoutes);
 app.use('/api/module', moduleRoutes);
 app.use('/api/video', videoRoutes);
 app.use('/api/topics', topicsRoutes);
+app.use('/api/paths', pathsRoutes);
 
 // Health check route
 app.get('/health', (req, res) => {
