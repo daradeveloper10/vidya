@@ -1,10 +1,11 @@
 import { useEffect, useState } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { Link, useNavigate } from 'react-router-dom';
+import AppHeader from '../components/ui/AppHeader';
 import api from '../services/api';
 
 function Dashboard() {
-  const { user, logout } = useAuth();
+  const { user } = useAuth();
   const navigate = useNavigate();
   const [curricula, setCurricula] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -116,9 +117,7 @@ function Dashboard() {
   if (loading) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-primary-950 via-primary-900 to-primary-800">
-        <header className="px-6 py-6 flex justify-between items-center border-b border-primary-700/50">
-          <div className="text-3xl font-heading font-bold text-white">Vidya</div>
-        </header>
+        <AppHeader />
         <main className="max-w-7xl mx-auto px-6 py-12 space-y-16">
           <section className="space-y-6">
             <div className="h-10 bg-white/10 rounded w-64 animate-pulse"></div>
@@ -135,20 +134,7 @@ function Dashboard() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-primary-950 via-primary-900 to-primary-800">
-      {/* Header */}
-      <header className="px-6 py-6 flex justify-between items-center border-b border-primary-700/50">
-        <Link to="/" className="text-3xl font-heading font-bold text-white hover:text-accent-400 transition-colors">
-          Vidya
-        </Link>
-        <div className="flex items-center gap-4">
-          <Link to="/passport" className="px-4 py-2 text-primary-200 hover:text-white transition-colors font-body">
-            Knowledge Passport
-          </Link>
-          <button onClick={logout} className="px-4 py-2 text-primary-200 hover:text-white transition-colors font-body">
-            Sign Out
-          </button>
-        </div>
-      </header>
+      <AppHeader />
 
       <main className="max-w-7xl mx-auto px-6 py-12 space-y-16">
         {/* ZONE 1: Return Zone */}

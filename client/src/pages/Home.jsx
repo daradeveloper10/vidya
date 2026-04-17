@@ -1,5 +1,6 @@
 import { useAuth } from '../context/AuthContext';
 import GoogleSignInButton from '../components/ui/GoogleSignInButton';
+import SignInModal from '../components/ui/SignInModal';
 import ClarificationChat from '../components/curriculum/ClarificationChat';
 import TimeSelection from '../components/curriculum/TimeSelection';
 import { Link, useNavigate } from 'react-router-dom';
@@ -14,6 +15,7 @@ function Home() {
   const [clarificationQuestions, setClarificationQuestions] = useState([]);
   const [clarificationOptions, setClarificationOptions] = useState([]);
   const [clarificationAnswers, setClarificationAnswers] = useState([]);
+  const [showSignInModal, setShowSignInModal] = useState(false);
 
   // Spark cards state
   const [sparkTopics, setSparkTopics] = useState([]);
@@ -67,8 +69,8 @@ function Home() {
       const pendingTopic = localStorage.getItem('pendingTopic');
       if (pendingTopic) {
         localStorage.removeItem('pendingTopic');
+        setShowSignInModal(false);
         setTopicInput(pendingTopic);
-        // Trigger the flow automatically
         startLearningFlow(pendingTopic);
       }
     }
@@ -95,7 +97,7 @@ function Home() {
   const requireAuth = (topic) => {
     if (!isAuthenticated) {
       localStorage.setItem('pendingTopic', topic);
-      navigate('/signin');
+      setShowSignInModal(true);
       return false;
     }
     return true;
@@ -322,6 +324,8 @@ function Home() {
           </>
         )}
       </main>
+      
+      {showSignInModal && <SignInModal onClose={() => setShowSignInModal(false)} />}
     </div>
   );
 }
