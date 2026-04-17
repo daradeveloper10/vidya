@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
+import AppHeader from '../components/ui/AppHeader';
 import api from '../services/api';
 import confetti from 'canvas-confetti';
 
@@ -128,12 +129,7 @@ function Complete() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-primary-950 via-primary-900 to-primary-800">
-      {/* Header */}
-      <header className="px-6 py-6 border-b border-primary-700/50">
-        <Link to="/dashboard" className="text-3xl font-heading font-bold text-white hover:text-accent-400 transition-colors">
-          Vidya
-        </Link>
-      </header>
+      <AppHeader />
 
       <main className="max-w-5xl mx-auto px-6 py-12 space-y-16">
         {/* Celebration Section */}

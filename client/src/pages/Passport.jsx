@@ -1,10 +1,11 @@
 import { useEffect, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
+import AppHeader from '../components/ui/AppHeader';
 import api from '../services/api';
 
 function Passport() {
-  const { user, logout } = useAuth();
+  const { user } = useAuth();
   const navigate = useNavigate();
   const [curricula, setCurricula] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -176,23 +177,7 @@ function Passport() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-primary-950 via-primary-900 to-primary-800">
-      {/* Header */}
-      <header className="px-6 py-6 flex justify-between items-center border-b border-primary-700/50">
-        <Link to="/dashboard" className="text-primary-200 hover:text-white transition-colors font-body flex items-center gap-2">
-          ← Dashboard
-        </Link>
-        
-        <Link to="/" className="text-3xl font-heading font-bold text-white hover:text-accent-400 transition-colors">
-          Vidya
-        </Link>
-
-        <button
-          onClick={logout}
-          className="px-4 py-2 text-primary-200 hover:text-white transition-colors font-body"
-        >
-          Sign Out
-        </button>
-      </header>
+      <AppHeader />
 
       <main className="max-w-7xl mx-auto px-6 py-12 space-y-12">
         {/* Title */}

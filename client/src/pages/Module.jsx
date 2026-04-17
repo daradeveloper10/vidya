@@ -1,6 +1,7 @@
 import { useEffect, useState, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
+import AppHeader from '../components/ui/AppHeader';
 import api from '../services/api';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
@@ -472,22 +473,7 @@ function Module() {
         </div>
       )}
 
-      <header className="px-6 py-6 border-b border-primary-700/50">
-        <div className="max-w-4xl mx-auto flex items-center justify-between">
-          <div>
-            <h1 className="text-2xl font-heading font-bold text-white">{curriculum.displayTitle || curriculum.topic}</h1>
-            <p className="text-primary-300 font-body text-sm mt-1">
-              Module {moduleIndex + 1} of {curriculum.modules.length}: {currentModule.title}
-            </p>
-          </div>
-          <button
-            onClick={() => navigate('/dashboard')}
-            className="px-4 py-2 text-primary-200 hover:text-white transition-colors font-body"
-          >
-            ← Dashboard
-          </button>
-        </div>
-      </header>
+      <AppHeader />
 
       <main className="max-w-4xl mx-auto px-6 py-12 space-y-12">
         {!showQuiz && !showSummary && (
