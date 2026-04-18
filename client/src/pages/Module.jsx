@@ -422,7 +422,7 @@ function Module() {
   const handleExplainDifferently = async (conceptText, blockIndex) => {
     try {
       setExplainLoading({ ...explainLoading, [blockIndex]: true });
-      setLessonContent('');
+      // Do NOT clear lessonContent — keep existing content visible while loading
       const response = await api.post(`/api/module/${curriculumId}/${moduleIndex}/explain`, {
         conceptText
       });
@@ -539,6 +539,31 @@ function Module() {
       <main className="max-w-4xl mx-auto px-4 sm:px-6 py-8 sm:py-12 space-y-8 sm:space-y-12">
         {!showQuiz && !showSummary && (
           <section className="space-y-8">
+
+            {/* Module progress indicator */}
+            {(() => {
+              const completedCount = curriculum.modules.filter(m => m.completed).length;
+              const progressPercent = Math.round((completedCount / curriculum.modules.length) * 100);
+              return (
+                <div className="space-y-2">
+                  <div className="flex items-center justify-between">
+                    <p className="text-accent-400 font-body text-sm font-semibold">
+                      Module {moduleIndex + 1} of {curriculum.modules.length}
+                    </p>
+                    <p className="text-primary-400 font-body text-sm">
+                      {completedCount} completed · {progressPercent}%
+                    </p>
+                  </div>
+                  <div className="w-full bg-primary-800 rounded-full h-1.5">
+                    <div
+                      className="bg-accent-500 h-1.5 rounded-full transition-all duration-300"
+                      style={{ width: `${progressPercent}%` }}
+                    />
+                  </div>
+                </div>
+              );
+            })()}
+
             <div className="space-y-4">
               <h2 className="text-2xl sm:text-4xl font-heading font-bold text-white">{currentModule.title}</h2>
               <p className="text-base sm:text-xl text-primary-200 font-body">{currentModule.description}</p>
@@ -612,14 +637,18 @@ function Module() {
                 {!isStreaming && lessonContent && (
                   <div className="flex justify-center mt-8">
                     <button
-                      onClick={() => handleExplainDifferently(lessonContent, 0)}
+                      onClick={() => !explainLoading[0] && handleExplainDifferently(lessonContent, 0)}
                       disabled={explainLoading[0]}
-                      className="text-sm text-accent-400 hover:text-accent-300 transition-colors font-body flex items-center gap-2"
+                      className={`text-sm font-body flex items-center gap-2 px-4 py-2 border rounded-lg transition-all ${
+                        explainLoading[0]
+                          ? 'text-primary-400 border-primary-700 cursor-not-allowed'
+                          : 'text-accent-400 hover:text-accent-300 border-accent-500/30 hover:border-accent-500/60'
+                      }`}
                     >
                       {explainLoading[0] ? (
                         <>
-                          <div className="animate-spin rounded-full h-3 w-3 border-b border-accent-400"></div>
-                          Generating...
+                          <div className="animate-spin rounded-full h-3 w-3 border-b border-primary-400"></div>
+                          Generating new explanation...
                         </>
                       ) : (
                         <>Explain this differently →</>
