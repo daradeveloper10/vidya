@@ -69,101 +69,46 @@ function PathContinuePrompt({ pathSlug, curriculumId, onContinue, onDismiss }) {
 
 function Module() {
   console.log('Module version: 2.0 - new messages active');
-  
+
   const { curriculumId, moduleIndex: urlModuleIndex } = useParams();
   const navigate = useNavigate();
   const { user } = useAuth();
-  
+
   const streamBuffer = useRef('');
-  
+
   const markdownComponents = {
     h1: ({children}) => (
-      <h1 style={{
-        fontSize: '1.875rem',
-        fontWeight: '700',
-        color: '#ffffff',
-        marginTop: '2rem',
-        marginBottom: '1rem',
-        lineHeight: '1.2'
-      }}>{children}</h1>
+      <h1 style={{ fontSize: '1.875rem', fontWeight: '700', color: '#ffffff', marginTop: '2rem', marginBottom: '1rem', lineHeight: '1.2' }}>{children}</h1>
     ),
     h2: ({children}) => (
-      <h2 style={{
-        fontSize: '1.5rem',
-        fontWeight: '700', 
-        color: '#ffffff',
-        marginTop: '1.75rem',
-        marginBottom: '0.75rem',
-        lineHeight: '1.3'
-      }}>{children}</h2>
+      <h2 style={{ fontSize: '1.5rem', fontWeight: '700', color: '#ffffff', marginTop: '1.75rem', marginBottom: '0.75rem', lineHeight: '1.3' }}>{children}</h2>
     ),
     h3: ({children}) => (
-      <h3 style={{
-        fontSize: '1.25rem',
-        fontWeight: '600',
-        color: '#e2e8f0',
-        marginTop: '1.5rem',
-        marginBottom: '0.5rem'
-      }}>{children}</h3>
+      <h3 style={{ fontSize: '1.25rem', fontWeight: '600', color: '#e2e8f0', marginTop: '1.5rem', marginBottom: '0.5rem' }}>{children}</h3>
     ),
     p: ({children}) => (
-      <p style={{
-        color: '#cbd5e1',
-        lineHeight: '1.8',
-        marginBottom: '1rem',
-        fontSize: '1rem'
-      }}>{children}</p>
+      <p style={{ color: '#cbd5e1', lineHeight: '1.8', marginBottom: '1rem', fontSize: '1rem' }}>{children}</p>
     ),
     strong: ({children}) => (
-      <strong style={{
-        color: '#ffffff',
-        fontWeight: '600'
-      }}>{children}</strong>
+      <strong style={{ color: '#ffffff', fontWeight: '600' }}>{children}</strong>
     ),
     li: ({children}) => (
-      <li style={{
-        color: '#cbd5e1',
-        marginBottom: '0.25rem',
-        lineHeight: '1.7'
-      }}>{children}</li>
+      <li style={{ color: '#cbd5e1', marginBottom: '0.25rem', lineHeight: '1.7' }}>{children}</li>
     ),
     ul: ({children}) => (
-      <ul style={{
-        paddingLeft: '1.5rem',
-        marginTop: '0.5rem',
-        marginBottom: '1rem'
-      }}>{children}</ul>
+      <ul style={{ paddingLeft: '1.5rem', marginTop: '0.5rem', marginBottom: '1rem' }}>{children}</ul>
     ),
     ol: ({children}) => (
-      <ol style={{
-        paddingLeft: '1.5rem',
-        marginTop: '0.5rem',
-        marginBottom: '1rem'
-      }}>{children}</ol>
+      <ol style={{ paddingLeft: '1.5rem', marginTop: '0.5rem', marginBottom: '1rem' }}>{children}</ol>
     ),
     table: ({children}) => (
-      <table style={{
-        width: '100%',
-        borderCollapse: 'collapse',
-        marginTop: '1rem',
-        marginBottom: '1rem'
-      }}>{children}</table>
+      <table style={{ width: '100%', borderCollapse: 'collapse', marginTop: '1rem', marginBottom: '1rem' }}>{children}</table>
     ),
     th: ({children}) => (
-      <th style={{
-        color: '#ffffff',
-        fontWeight: '600',
-        padding: '0.5rem 1rem',
-        borderBottom: '2px solid rgba(255,255,255,0.2)',
-        textAlign: 'left'
-      }}>{children}</th>
+      <th style={{ color: '#ffffff', fontWeight: '600', padding: '0.5rem 1rem', borderBottom: '2px solid rgba(255,255,255,0.2)', textAlign: 'left' }}>{children}</th>
     ),
     td: ({children}) => (
-      <td style={{
-        color: '#cbd5e1',
-        padding: '0.5rem 1rem',
-        borderBottom: '1px solid rgba(255,255,255,0.1)'
-      }}>{children}</td>
+      <td style={{ color: '#cbd5e1', padding: '0.5rem 1rem', borderBottom: '1px solid rgba(255,255,255,0.1)' }}>{children}</td>
     ),
   };
 
@@ -185,6 +130,12 @@ function Module() {
   const [video, setVideo] = useState(null);
   const [loadingVideo, setLoadingVideo] = useState(false);
   const [showPathPrompt, setShowPathPrompt] = useState(false);
+
+  // Concept clarification state
+  const [wrongConcepts, setWrongConcepts] = useState([]);
+  const [conceptExplanations, setConceptExplanations] = useState({});
+  const [loadingConcept, setLoadingConcept] = useState({});
+  const [openConcept, setOpenConcept] = useState(null);
 
   const currentModule = curriculum?.modules?.[moduleIndex] || null;
 
@@ -310,7 +261,7 @@ function Module() {
       });
 
       const contentType = response.headers.get('content-type');
-      
+
       if (contentType && contentType.includes('application/json')) {
         const data = await response.json();
         setLessonContent(data.content);
@@ -320,11 +271,11 @@ function Module() {
 
       setIsStreaming(true);
       setLoadingLesson(false);
-      
+
       const updateInterval = setInterval(() => {
         setLessonContent(streamBuffer.current);
       }, 150);
-      
+
       const reader = response.body.getReader();
       const decoder = new TextDecoder();
       let buffer = '';
@@ -340,7 +291,7 @@ function Module() {
         for (const line of lines) {
           if (line.startsWith('data: ')) {
             const data = line.slice(6);
-            
+
             if (data === '[DONE]') {
               clearInterval(updateInterval);
               setLessonContent(streamBuffer.current);
@@ -392,7 +343,6 @@ function Module() {
 
   const fetchVideo = async () => {
     try {
-      // Use curriculum data directly to check cached video
       const mod = curriculum?.modules?.[moduleIndex];
       if (mod?.video?.videoId) {
         setVideo(mod.video);
@@ -400,7 +350,7 @@ function Module() {
       }
 
       setLoadingVideo(true);
-      
+
       const response = await api.post('/api/video/search', {
         moduleTitle: mod.title,
         curriculumTopic: curriculum.topic,
@@ -422,7 +372,6 @@ function Module() {
   const handleExplainDifferently = async (conceptText, blockIndex) => {
     try {
       setExplainLoading({ ...explainLoading, [blockIndex]: true });
-      // Do NOT clear lessonContent — keep existing content visible while loading
       const response = await api.post(`/api/module/${curriculumId}/${moduleIndex}/explain`, {
         conceptText
       });
@@ -431,6 +380,29 @@ function Module() {
       console.error('Error getting alternative explanation:', error);
     } finally {
       setExplainLoading({ ...explainLoading, [blockIndex]: false });
+    }
+  };
+
+  const handleConceptClick = async (concept) => {
+    if (openConcept === concept) {
+      setOpenConcept(null);
+      return;
+    }
+    setOpenConcept(concept);
+
+    if (conceptExplanations[concept]) return;
+
+    try {
+      setLoadingConcept(prev => ({ ...prev, [concept]: true }));
+      const response = await api.post(
+        `/api/module/${curriculumId}/${moduleIndex}/clarify-concept`,
+        { concept, lessonContent }
+      );
+      setConceptExplanations(prev => ({ ...prev, [concept]: response.data.explanation }));
+    } catch (err) {
+      console.error('Error clarifying concept:', err);
+    } finally {
+      setLoadingConcept(prev => ({ ...prev, [concept]: false }));
     }
   };
 
@@ -451,8 +423,18 @@ function Module() {
     setSelectedAnswer(answer);
     const currentQuestion = questions[currentQuestionIndex];
     const isCorrect = answer === currentQuestion.correctAnswer;
-    setAnswers([...answers, { question: currentQuestion.question, selected: answer, correct: isCorrect }]);
-    
+
+    const updatedAnswers = [
+      ...answers,
+      {
+        question: currentQuestion.question,
+        selected: answer,
+        correct: isCorrect,
+        concept: currentQuestion.topic || currentQuestion.question.slice(0, 50),
+      }
+    ];
+    setAnswers(updatedAnswers);
+
     setTimeout(() => {
       if (currentQuestionIndex < questions.length - 1) {
         setCurrentQuestionIndex(currentQuestionIndex + 1);
@@ -460,6 +442,13 @@ function Module() {
       } else {
         submitQuizScore();
         setShowSummary(true);
+        // Extract concepts from wrong answers
+        const wrong = updatedAnswers
+          .filter(a => !a.correct)
+          .map(a => a.concept)
+          .filter(Boolean)
+          .slice(0, 3);
+        setWrongConcepts(wrong);
       }
     }, 2000);
   };
@@ -500,6 +489,9 @@ function Module() {
       setShowSummary(false);
       setQuestions([]);
       setAnswers([]);
+      setWrongConcepts([]);
+      setConceptExplanations({});
+      setOpenConcept(null);
       window.scrollTo(0, 0);
     } else {
       navigate(`/complete/${curriculumId}`);
@@ -521,7 +513,6 @@ function Module() {
   }
 
   const score = answers.length > 0 ? calculateScore() : null;
-  const contentBlocks = lessonContent.split('\n\n').filter(block => block.trim().length > 0);
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-primary-950 via-primary-900 to-primary-800">
@@ -766,6 +757,45 @@ function Module() {
                 {getScoreMessage(score.percentage)}
               </p>
             </div>
+
+            {/* Concept clarification — only shows if score < 70% and there are wrong answers */}
+            {score.percentage < 70 && wrongConcepts.length > 0 && (
+              <div className="space-y-3">
+                <p className="text-primary-300 font-body text-sm text-center">
+                  Still fuzzy on something? Tap a concept for a fresh explanation.
+                </p>
+                <div className="flex flex-col gap-2">
+                  {wrongConcepts.map((concept) => (
+                    <div key={concept}>
+                      <button
+                        onClick={() => handleConceptClick(concept)}
+                        className={`px-4 py-2 rounded-full text-sm font-body transition-all ${
+                          openConcept === concept
+                            ? 'bg-accent-500 text-white'
+                            : 'bg-white/10 text-primary-200 hover:bg-white/20 hover:text-white border border-primary-700'
+                        }`}
+                      >
+                        {openConcept === concept ? '▾' : '▸'} {concept}
+                      </button>
+                      {openConcept === concept && (
+                        <div className="mt-2 p-4 bg-white/5 border border-primary-700 rounded-xl">
+                          {loadingConcept[concept] ? (
+                            <div className="flex items-center gap-2 text-primary-300 font-body text-sm">
+                              <div className="animate-spin rounded-full h-3 w-3 border-b border-primary-300"></div>
+                              Generating explanation...
+                            </div>
+                          ) : (
+                            <p className="text-primary-200 font-body text-sm leading-relaxed">
+                              {conceptExplanations[concept]}
+                            </p>
+                          )}
+                        </div>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
 
             <div className="bg-white/5 backdrop-blur-sm border border-primary-700 rounded-xl p-8 space-y-6">
               <h3 className="text-2xl font-heading font-bold text-white">Module Summary</h3>

@@ -211,7 +211,10 @@ Respond ONLY with the JSON array, no other text.`
       }]
     });
 
-    const questionsData = JSON.parse(message.content[0].text);
+    // Strip markdown fences before parsing
+    let cleanJson = message.content[0].text.trim();
+    cleanJson = cleanJson.replace(/```json\n?/g, '').replace(/```\n?/g, '').trim();
+    const questionsData = JSON.parse(cleanJson);
 
     // Save questions to database
     module.questions = questionsData;
