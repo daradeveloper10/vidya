@@ -383,26 +383,27 @@ function Module() {
     }
   };
 
-  const handleConceptClick = async (concept) => {
-    if (openConcept === concept) {
+  const handleConceptClick = async (conceptObj) => {
+    const key = conceptObj.label;
+    if (openConcept === key) {
       setOpenConcept(null);
       return;
     }
-    setOpenConcept(concept);
+    setOpenConcept(key);
 
-    if (conceptExplanations[concept]) return;
+    if (conceptExplanations[key]) return;
 
     try {
-      setLoadingConcept(prev => ({ ...prev, [concept]: true }));
+      setLoadingConcept(prev => ({ ...prev, [key]: true }));
       const response = await api.post(
         `/api/module/${curriculumId}/${moduleIndex}/clarify-concept`,
-        { concept, lessonContent }
+        { concept: conceptObj.fullQuestion, lessonContent }
       );
-      setConceptExplanations(prev => ({ ...prev, [concept]: response.data.explanation }));
+      setConceptExplanations(prev => ({ ...prev, [key]: response.data.explanation }));
     } catch (err) {
       console.error('Error clarifying concept:', err);
     } finally {
-      setLoadingConcept(prev => ({ ...prev, [concept]: false }));
+      setLoadingConcept(prev => ({ ...prev, [key]: false }));
     }
   };
 
@@ -430,7 +431,7 @@ function Module() {
         question: currentQuestion.question,
         selected: answer,
         correct: isCorrect,
-        concept: currentQuestion.topic || currentQuestion.question.slice(0, 50),
+        concept: currentQuestion.question,
       }
     ];
     setAnswers(updatedAnswers);
@@ -445,8 +446,10 @@ function Module() {
         // Extract concepts from wrong answers
         const wrong = updatedAnswers
           .filter(a => !a.correct)
-          .map(a => a.concept)
-          .filter(Boolean)
+          .map(a => ({
+            label: a.concept.length > 40 ? a.concept.slice(0, 37) + '...' : a.concept,
+            fullQuestion: a.concept,
+          }))
           .slice(0, 3);
         setWrongConcepts(wrong);
       }
@@ -765,28 +768,28 @@ function Module() {
                   Still fuzzy on something? Tap a concept for a fresh explanation.
                 </p>
                 <div className="flex flex-col gap-2">
-                  {wrongConcepts.map((concept) => (
-                    <div key={concept}>
+                  {wrongConcepts.map((conceptObj) => (
+                    <div key={conceptObj.label}>
                       <button
-                        onClick={() => handleConceptClick(concept)}
+                        onClick={() => handleConceptClick(conceptObj)}
                         className={`px-4 py-2 rounded-full text-sm font-body transition-all ${
-                          openConcept === concept
+                          openConcept === conceptObj.label
                             ? 'bg-accent-500 text-white'
                             : 'bg-white/10 text-primary-200 hover:bg-white/20 hover:text-white border border-primary-700'
                         }`}
                       >
-                        {openConcept === concept ? '▾' : '▸'} {concept}
+                        {openConcept === conceptObj.label ? '▾' : '▸'} {conceptObj.label}
                       </button>
-                      {openConcept === concept && (
+                      {openConcept === conceptObj.label && (
                         <div className="mt-2 p-4 bg-white/5 border border-primary-700 rounded-xl">
-                          {loadingConcept[concept] ? (
+                          {loadingConcept[conceptObj.label] ? (
                             <div className="flex items-center gap-2 text-primary-300 font-body text-sm">
                               <div className="animate-spin rounded-full h-3 w-3 border-b border-primary-300"></div>
                               Generating explanation...
                             </div>
                           ) : (
                             <p className="text-primary-200 font-body text-sm leading-relaxed">
-                              {conceptExplanations[concept]}
+                              {conceptExplanations[conceptObj.label]}
                             </p>
                           )}
                         </div>
