@@ -559,9 +559,12 @@ function Module() {
                   <div className="flex items-center justify-between">
                     <button
                       onClick={() => setShowModuleList(!showModuleList)}
-                      className="text-accent-400 font-body text-sm font-semibold hover:text-accent-300 transition-colors flex items-center gap-1"
+                      className="flex items-center gap-2 px-3 py-1.5 bg-white/10 hover:bg-white/20 border border-primary-700 rounded-lg transition-colors"
                     >
-                      {showModuleList ? '▾' : '▸'} Module {moduleIndex + 1} of {curriculum.modules.length}
+                      <span className="text-accent-400 font-body text-sm font-semibold">
+                        Module {moduleIndex + 1} of {curriculum.modules.length}
+                      </span>
+                      <span className="text-primary-400 text-xs">{showModuleList ? '▾' : '▸'}</span>
                     </button>
                     <p className="text-primary-400 font-body text-sm">
                       {completedCount} completed · {progressPercent}%
@@ -758,6 +761,14 @@ function Module() {
                         <p className="text-white font-body">You scored <span className="text-accent-400 font-semibold">{currentModule.score}%</span> on this module</p>
                       )}
                       <div className="flex gap-3 justify-center flex-wrap">
+                        {moduleIndex > 0 && (
+                          <button
+                            onClick={() => handleModuleSelect(moduleIndex - 1)}
+                            className="px-6 py-2 bg-white/10 text-white font-semibold rounded-lg hover:bg-white/20 transition-colors font-body text-sm"
+                          >
+                            ← Previous Module
+                          </button>
+                        )}
                         <button
                           onClick={startQuiz}
                           className="px-6 py-2 bg-white/10 text-white font-semibold rounded-lg hover:bg-white/20 transition-colors font-body text-sm"
