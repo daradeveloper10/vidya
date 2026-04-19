@@ -92,6 +92,9 @@ function Module() {
     strong: ({children}) => (
       <strong style={{ color: '#ffffff', fontWeight: '600' }}>{children}</strong>
     ),
+    code: ({children}) => (
+      <code style={{ backgroundColor: 'rgba(255,255,255,0.1)', padding: '0.1rem 0.3rem', borderRadius: '0.25rem', fontSize: '0.9rem', color: '#e2e8f0' }}>{children}</code>
+    ),
     li: ({children}) => (
       <li style={{ color: '#cbd5e1', marginBottom: '0.25rem', lineHeight: '1.7' }}>{children}</li>
     ),
@@ -130,6 +133,7 @@ function Module() {
   const [video, setVideo] = useState(null);
   const [loadingVideo, setLoadingVideo] = useState(false);
   const [showPathPrompt, setShowPathPrompt] = useState(false);
+  const [showModuleList, setShowModuleList] = useState(false);
 
   // Concept clarification state
   const [wrongConcepts, setWrongConcepts] = useState([]);
@@ -407,6 +411,19 @@ function Module() {
     }
   };
 
+  const handleModuleSelect = (index) => {
+    setModuleIndex(index);
+    setShowQuiz(false);
+    setShowSummary(false);
+    setQuestions([]);
+    setAnswers([]);
+    setWrongConcepts([]);
+    setConceptExplanations({});
+    setOpenConcept(null);
+    setShowModuleList(false);
+    window.scrollTo(0, 0);
+  };
+
   const startQuiz = async () => {
     try {
       const response = await api.post(`/api/module/${curriculumId}/${moduleIndex}/quiz`);
@@ -443,7 +460,6 @@ function Module() {
       } else {
         submitQuizScore();
         setShowSummary(true);
-        // Extract concepts from wrong answers
         const wrong = updatedAnswers
           .filter(a => !a.correct)
           .map(a => ({
@@ -534,16 +550,19 @@ function Module() {
         {!showQuiz && !showSummary && (
           <section className="space-y-8">
 
-            {/* Module progress indicator */}
+            {/* Module progress indicator with module list toggle */}
             {(() => {
               const completedCount = curriculum.modules.filter(m => m.completed).length;
               const progressPercent = Math.round((completedCount / curriculum.modules.length) * 100);
               return (
                 <div className="space-y-2">
                   <div className="flex items-center justify-between">
-                    <p className="text-accent-400 font-body text-sm font-semibold">
-                      Module {moduleIndex + 1} of {curriculum.modules.length}
-                    </p>
+                    <button
+                      onClick={() => setShowModuleList(!showModuleList)}
+                      className="text-accent-400 font-body text-sm font-semibold hover:text-accent-300 transition-colors flex items-center gap-1"
+                    >
+                      {showModuleList ? '▾' : '▸'} Module {moduleIndex + 1} of {curriculum.modules.length}
+                    </button>
                     <p className="text-primary-400 font-body text-sm">
                       {completedCount} completed · {progressPercent}%
                     </p>
@@ -554,6 +573,39 @@ function Module() {
                       style={{ width: `${progressPercent}%` }}
                     />
                   </div>
+
+                  {/* Module list dropdown */}
+                  {showModuleList && (
+                    <div className="mt-3 bg-white/5 border border-primary-700 rounded-xl overflow-hidden">
+                      {curriculum.modules.map((mod, index) => (
+                        <button
+                          key={index}
+                          onClick={() => handleModuleSelect(index)}
+                          className={`w-full px-4 py-3 text-left flex items-center gap-3 transition-colors border-b border-primary-800 last:border-0 ${
+                            index === moduleIndex
+                              ? 'bg-accent-500/20 text-white'
+                              : 'hover:bg-white/5 text-primary-200'
+                          }`}
+                        >
+                          <div className={`flex-shrink-0 w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold ${
+                            mod.completed
+                              ? 'bg-accent-500 text-white'
+                              : index === moduleIndex
+                              ? 'bg-accent-500/30 text-accent-400 border border-accent-500'
+                              : 'bg-primary-800 text-primary-400'
+                          }`}>
+                            {mod.completed ? '✓' : index + 1}
+                          </div>
+                          <span className="font-body text-sm flex-1 text-left">{mod.title}</span>
+                          {mod.completed && (
+                            <span className="text-xs text-accent-400 font-body flex-shrink-0">
+                              {mod.score !== undefined ? `${mod.score}%` : 'Done'}
+                            </span>
+                          )}
+                        </button>
+                      ))}
+                    </div>
+                  )}
                 </div>
               );
             })()}
@@ -685,14 +737,45 @@ function Module() {
                   </div>
                 )}
 
-                <div className="pt-8 text-center">
-                  <button
-                    onClick={startQuiz}
-                    className="px-8 py-4 bg-accent-500 text-white font-semibold rounded-lg hover:bg-accent-600 transition-all duration-200 shadow-lg hover:shadow-xl font-body text-lg"
-                  >
-                    Test Your Knowledge →
-                  </button>
-                </div>
+                {/* Only show quiz button if module not already completed */}
+                {!currentModule.completed && (
+                  <div className="pt-8 text-center">
+                    <button
+                      onClick={startQuiz}
+                      className="px-8 py-4 bg-accent-500 text-white font-semibold rounded-lg hover:bg-accent-600 transition-all duration-200 shadow-lg hover:shadow-xl font-body text-lg"
+                    >
+                      Test Your Knowledge →
+                    </button>
+                  </div>
+                )}
+
+                {/* If module already completed, show score and option to retake or continue */}
+                {currentModule.completed && (
+                  <div className="pt-8 space-y-4">
+                    <div className="p-4 bg-accent-500/10 border border-accent-500/30 rounded-xl text-center space-y-3">
+                      <p className="text-accent-400 font-body text-sm font-semibold uppercase tracking-wide">Module Complete</p>
+                      {currentModule.score !== undefined && (
+                        <p className="text-white font-body">You scored <span className="text-accent-400 font-semibold">{currentModule.score}%</span> on this module</p>
+                      )}
+                      <div className="flex gap-3 justify-center flex-wrap">
+                        <button
+                          onClick={startQuiz}
+                          className="px-6 py-2 bg-white/10 text-white font-semibold rounded-lg hover:bg-white/20 transition-colors font-body text-sm"
+                        >
+                          Retake Quiz
+                        </button>
+                        {moduleIndex < curriculum.modules.length - 1 && (
+                          <button
+                            onClick={() => handleModuleSelect(moduleIndex + 1)}
+                            className="px-6 py-2 bg-accent-500 text-white font-semibold rounded-lg hover:bg-accent-600 transition-colors font-body text-sm"
+                          >
+                            Next Module →
+                          </button>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                )}
               </>
             )}
           </section>
@@ -788,9 +871,11 @@ function Module() {
                               Generating explanation...
                             </div>
                           ) : (
-                            <p className="text-primary-200 font-body text-sm leading-relaxed">
-                              {conceptExplanations[conceptObj.label]}
-                            </p>
+                            <div className="text-sm leading-relaxed">
+                              <ReactMarkdown remarkPlugins={[remarkGfm]} components={markdownComponents}>
+                                {conceptExplanations[conceptObj.label]}
+                              </ReactMarkdown>
+                            </div>
                           )}
                         </div>
                       )}
