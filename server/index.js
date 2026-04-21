@@ -19,6 +19,15 @@ const { startTopicRefreshJob } = require('./jobs/topicRefreshJob');
 const app = express();
 const PORT = process.env.PORT || 3000;
 
+// Security middleware
+const helmet = require('helmet');
+const rateLimit = require('express-rate-limit');
+
+app.use(helmet({
+  crossOriginEmbedderPolicy: false,
+  contentSecurityPolicy: false,
+}));
+
 // Middleware
 app.use(cors({
   origin: 'https://vidya-six.vercel.app',
@@ -26,8 +35,19 @@ app.use(cors({
   methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE'],
   allowedHeaders: ['Content-Type', 'Authorization']
 }))
-app.use(express.json());
-app.use(express.urlencoded({ extended: true }));
+app.use(express.json({ limit: '100kb' }));
+app.use(express.urlencoded({ limit: '100kb', extended: true }));
+
+// General API rate limit
+const generalLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  max: 100,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { error: 'Too many requests, please try again later' }
+});
+
+app.use('/api', generalLimiter);
 
 // Session configuration (kept for passport compatibility)
 app.use(session({

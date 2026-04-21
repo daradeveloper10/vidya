@@ -260,8 +260,12 @@ exports.generate = async (req, res) => {
     const { topic, duration, clarificationAnswers, pathSlug, courseIndex } = req.body;
     const userId = req.user._id;
 
+    const VALID_DURATIONS = ['10min', '30min', '2hrs', '5hrs', '10hrs', '20hrs', '30hrs'];
     if (!topic || !duration) {
       return res.status(400).json({ error: 'Topic and duration are required' });
+    }
+    if (!VALID_DURATIONS.includes(duration)) {
+      return res.status(400).json({ error: 'Invalid duration' });
     }
 
     const Curriculum = require('../models/Curriculum');
