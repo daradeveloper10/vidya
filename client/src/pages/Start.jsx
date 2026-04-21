@@ -21,6 +21,7 @@ function Start() {
   const [clarificationAnswers, setClarificationAnswers] = useState([]);
   const [pathBuilderData, setPathBuilderData] = useState(null);
   const [showSignInModal, setShowSignInModal] = useState(false);
+  const [topicType, setTopicType] = useState('skill');
 
   // Wait for auth to resolve then auto-start if topic is pre-filled
   useEffect(() => {
@@ -73,7 +74,8 @@ function Start() {
     setFlowState('analysing');
     try {
       const response = await api.post('/api/curriculum/analyse', { topic });
-      const { clarity, questions, options } = response.data;
+      const { clarity, topicType: type, questions, options } = response.data;
+      setTopicType(type || 'skill');
       if (clarity === 'clear') {
         setFlowState('timeSelection');
       } else {
@@ -98,11 +100,12 @@ function Start() {
     setFlowState('timeSelection');
   };
 
-  const DURATIONS_REQUIRING_PATH = ['2hrs', '5hrs', '10hrs', '20hrs', '30hrs'];
+  const DURATIONS_REQUIRING_PATH = ['2hrs', '5hrs', '10hrs'];
 
   const handleTimeSelection = (duration) => {
-    if (DURATIONS_REQUIRING_PATH.includes(duration)) {
-      setPathBuilderData({ topic: topicInput, duration, clarificationAnswers });
+    const shouldOfferPath = DURATIONS_REQUIRING_PATH.includes(duration) && topicType !== 'concept';
+    if (shouldOfferPath) {
+      setPathBuilderData({ topic: topicInput, duration, clarificationAnswers, topicType });
       setFlowState('pathBuilding');
     } else {
       navigate('/learn', {
@@ -209,6 +212,7 @@ function Start() {
             topic={pathBuilderData.topic}
             duration={pathBuilderData.duration}
             clarificationAnswers={clarificationAnswers}
+            topicType={pathBuilderData.topicType}
             onConfirm={handlePathConfirm}
             onSkip={handlePathSkip}
           />

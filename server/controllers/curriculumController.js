@@ -35,21 +35,27 @@ exports.analyse = async (req, res) => {
       max_tokens: 1024,
       messages: [{
         role: 'user',
-        content: `You are an AI learning assistant analyzing a user's learning request. Your job is to determine if their request is clear enough to create a curriculum, or if you need clarification.
+        content: `You are an AI learning assistant analyzing a user's learning request. Your job is to determine if their request is clear enough to create a curriculum, and classify what type of topic it is.
 
 User's request: "${topic}"
 
 Analyze this request and respond with a JSON object:
 {
   "clarity": "clear" | "partial" | "ambiguous",
+  "topicType": "skill" | "subject" | "concept",
   "questions": [],
   "options": []
 }
 
-Rules:
+Rules for clarity:
 - "clear": The topic is specific enough. No questions needed. Return empty questions and options arrays.
 - "partial": The topic needs ONE clarifying question. Ask about scope, level, or specific focus.
-- "ambiguous": The topic needs TWO clarifying questions maximum. Ask about what they want to learn and their background.
+- "ambiguous": The topic needs TWO clarifying questions maximum.
+
+Rules for topicType:
+- "skill": Something you build toward a practical outcome with clear progression (e.g. Python, Negotiation, Public Speaking, Financial Modelling, Web Development, Data Science). Skills almost always benefit from a structured learning path.
+- "subject": A domain of knowledge or field of study (e.g. Ancient Rome, Quantum Physics, Economics, Psychology, Climate Science). Subjects sometimes benefit from a path.
+- "concept": A specific idea, question, or topic to understand (e.g. How does blockchain work, What is stoicism, The French Revolution). Concepts rarely benefit from a path — they are self-contained.
 
 Your questions should be:
 - Friendly and conversational
@@ -59,26 +65,6 @@ Your questions should be:
 
 For each question, provide 3-4 short, clear answer options in the options array.
 Each set of options should be a sub-array matching the question at the same index.
-
-Examples:
-- "machine learning" → partial → 
-  {
-    "clarity": "partial",
-    "questions": ["Are you interested in the theory behind ML, or practical applications?"],
-    "options": [["Theory and mathematics", "Practical coding applications", "Both theory and practice", "General overview"]]
-  }
-- "learn stuff" → ambiguous → 
-  {
-    "clarity": "ambiguous",
-    "questions": ["What subject or skill are you interested in?", "What's your goal with this learning?"],
-    "options": [["Technology/Programming", "Business/Finance", "Creative skills", "Science/Math"], ["Career change", "Hobby/Personal interest", "Academic study", "General knowledge"]]
-  }
-- "teach me React hooks from scratch" → clear → 
-  {
-    "clarity": "clear",
-    "questions": [],
-    "options": []
-  }
 
 Respond ONLY with the JSON object, no other text.`
       }]

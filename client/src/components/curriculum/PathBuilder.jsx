@@ -1,9 +1,9 @@
 import { useState, useEffect } from 'react';
 import api from '../../services/api';
 
-const DURATION_OPTIONS = ['2hrs', '5hrs', '10hrs'];
+const DURATION_OPTIONS = ['10min', '30min', '2hrs', '5hrs', '10hrs', '20hrs', '30hrs'];
 
-function PathBuilder({ topic, duration, clarificationAnswers, onConfirm, onSkip }) {
+function PathBuilder({ topic, duration, clarificationAnswers, topicType, onConfirm, onSkip }) {
   const [loading, setLoading] = useState(false);
   const [checkingRelated, setCheckingRelated] = useState(true);
   const [relatedPath, setRelatedPath] = useState(null);
@@ -22,11 +22,28 @@ function PathBuilder({ topic, duration, clarificationAnswers, onConfirm, onSkip 
     if (d === '2hrs') return 2;
     if (d === '5hrs') return 5;
     if (d === '10hrs') return 10;
+    if (d === '20hrs') return 20;
+    if (d === '30hrs') return 30;
     return 2;
   }
 
   function calcTotal(list) {
     return list.reduce((sum, c) => sum + durationToHours(c.duration), 0);
+  }
+
+  function formatHours(hours) {
+    if (hours < 1) return `${Math.round(hours * 60)} min`;
+    if (hours === Math.floor(hours)) return `${hours}hrs`;
+    return `${hours.toFixed(1)}hrs`;
+  }
+
+  function paceEstimate(totalHours) {
+    const atOne = Math.ceil(totalHours);
+    const atThree = Math.ceil(totalHours / 3);
+    return {
+      casual: atOne === 1 ? '1 day' : `${atOne} days`,
+      committed: atThree === 1 ? '1 day' : `${atThree} days`,
+    };
   }
 
   useEffect(() => {
@@ -56,6 +73,7 @@ function PathBuilder({ topic, duration, clarificationAnswers, onConfirm, onSkip 
         topic,
         duration,
         clarificationAnswers,
+        topicType,
       });
 
       const { pathName, pathDescription, startingCurriculum, suggestions } = response.data;
@@ -81,12 +99,6 @@ function PathBuilder({ topic, duration, clarificationAnswers, onConfirm, onSkip 
     const updated = curricula.map((c, i) =>
       i === index ? { ...c, selected: !c.selected } : c
     );
-    const selectedList = updated.filter(c => c.locked || c.selected);
-    const total = calcTotal(selectedList);
-    if (total > 10) {
-      setWarning('Adding this would exceed the 10-hour maximum. Please remove another topic first.');
-      return;
-    }
     setWarning('');
     setCurricula(updated);
   };
@@ -101,28 +113,15 @@ function PathBuilder({ topic, duration, clarificationAnswers, onConfirm, onSkip 
       order: curricula.length,
       selected: true,
     };
-    const updated = [...curricula, newItem];
-    const selectedList = updated.filter(c => c.locked || c.selected);
-    const total = calcTotal(selectedList);
-    if (total > 10) {
-      setWarning(`Adding "${customTopic}" would bring total to ${total}hrs which exceeds the 10-hour maximum.`);
-      return;
-    }
-    setWarning('');
-    setCurricula(updated);
+    setCurricula([...curricula, newItem]);
     setCustomTopic('');
     setShowAddForm(false);
   };
 
   const handleConfirm = () => {
     const selectedCurricula = curricula.filter(c => c.locked || c.selected);
-    const total = calcTotal(selectedCurricula);
-    if (total < 5) {
-      setWarning('Your path must be at least 5 hours total. Please add more topics.');
-      return;
-    }
-    if (total > 10) {
-      setWarning('Your path exceeds the 10-hour maximum. Please remove some topics.');
+    if (selectedCurricula.length < 2) {
+      setWarning('Please include at least 2 topics in your path.');
       return;
     }
     onConfirm({
@@ -135,6 +134,7 @@ function PathBuilder({ topic, duration, clarificationAnswers, onConfirm, onSkip 
 
   const selectedList = curricula.filter(c => c.locked || c.selected);
   const currentTotal = calcTotal(selectedList);
+  const pace = paceEstimate(currentTotal);
 
   if (checkingRelated) {
     return (
@@ -205,6 +205,8 @@ function PathBuilder({ topic, duration, clarificationAnswers, onConfirm, onSkip 
 
   return (
     <div className="space-y-8 animate-fade-in">
+
+      {/* Header */}
       <div className="text-center space-y-2">
         <h2 className="text-3xl font-heading font-bold text-white">Build Your Learning Path</h2>
         <p className="text-primary-200 font-body">
@@ -212,6 +214,7 @@ function PathBuilder({ topic, duration, clarificationAnswers, onConfirm, onSkip 
         </p>
       </div>
 
+      {/* Path name */}
       <div className="space-y-2">
         <label className="text-primary-300 font-body text-sm uppercase tracking-wide">Path Name</label>
         <input
@@ -222,30 +225,33 @@ function PathBuilder({ topic, duration, clarificationAnswers, onConfirm, onSkip 
         />
       </div>
 
-      <div className="space-y-2">
-        <div className="flex justify-between text-sm font-body">
-          <span className="text-primary-300">Total path duration</span>
-          <span className={`font-semibold ${currentTotal > 10 ? 'text-red-400' : currentTotal >= 5 ? 'text-accent-400' : 'text-amber-400'}`}>
-            {currentTotal}hrs / 10hrs max
-          </span>
+      {/* Time commitment summary */}
+      <div className="bg-accent-500/10 border border-accent-500/30 rounded-xl p-5 space-y-3">
+        <div className="flex items-center justify-between flex-wrap gap-2">
+          <div>
+            <p className="text-accent-400 font-body text-xs uppercase tracking-wide mb-1">Total Time Commitment</p>
+            <p className="text-white font-heading font-bold text-2xl">{formatHours(currentTotal)}</p>
+            <p className="text-primary-300 font-body text-sm">{selectedList.length} topics</p>
+          </div>
+          <div className="text-right space-y-1">
+            <p className="text-primary-300 font-body text-sm">
+              At 1hr/day → <span className="text-white font-semibold">{pace.casual}</span>
+            </p>
+            <p className="text-primary-300 font-body text-sm">
+              At 3hrs/day → <span className="text-white font-semibold">{pace.committed}</span>
+            </p>
+          </div>
         </div>
-        <div className="w-full bg-primary-800 rounded-full h-3">
-          <div
-            className={`h-3 rounded-full transition-all duration-300 ${currentTotal > 10 ? 'bg-red-500' : 'bg-accent-500'}`}
-            style={{ width: `${Math.min(100, (currentTotal / 10) * 100)}%` }}
-          />
-        </div>
-        {currentTotal < 5 && (
-          <p className="text-amber-400 font-body text-sm">Add more topics to reach the 5-hour minimum</p>
-        )}
       </div>
 
+      {/* Warning */}
       {warning && (
         <div className="p-4 bg-red-500/10 border border-red-500/30 rounded-lg">
           <p className="text-red-400 font-body text-sm">{warning}</p>
         </div>
       )}
 
+      {/* Curriculum list */}
       <div className="space-y-3">
         {curricula.map((c, index) => {
           const isSelected = c.locked || c.selected;
@@ -287,6 +293,7 @@ function PathBuilder({ topic, duration, clarificationAnswers, onConfirm, onSkip 
         })}
       </div>
 
+      {/* Add custom topic */}
       {!showAddForm ? (
         <button
           type="button"
@@ -304,8 +311,8 @@ function PathBuilder({ topic, duration, clarificationAnswers, onConfirm, onSkip 
             onChange={(e) => setCustomTopic(e.target.value)}
             className="w-full px-4 py-3 bg-white/10 border border-primary-700 rounded-lg text-white font-body focus:outline-none focus:border-accent-500 transition-colors"
           />
-          <div className="flex gap-2">
-            {DURATION_OPTIONS.map(d => (
+          <div className="flex gap-2 flex-wrap">
+            {['2hrs', '5hrs', '10hrs', '20hrs', '30hrs'].map(d => (
               <button
                 key={d}
                 type="button"
@@ -339,14 +346,15 @@ function PathBuilder({ topic, duration, clarificationAnswers, onConfirm, onSkip 
         </div>
       )}
 
+      {/* Actions */}
       <div className="flex flex-col sm:flex-row gap-3">
         <button
           type="button"
           onClick={handleConfirm}
-          disabled={currentTotal < 5 || currentTotal > 10 || !pathName.trim()}
+          disabled={!pathName.trim() || selectedList.length < 2}
           className="flex-1 px-8 py-4 bg-accent-500 text-white font-semibold rounded-lg hover:bg-accent-600 transition-all duration-200 shadow-lg font-body text-lg disabled:opacity-40 disabled:cursor-not-allowed"
         >
-          Build Path ({currentTotal}hrs)
+          Commit to Path · {formatHours(currentTotal)}
         </button>
         <button
           type="button"
@@ -356,6 +364,7 @@ function PathBuilder({ topic, duration, clarificationAnswers, onConfirm, onSkip 
           Skip — just the curriculum
         </button>
       </div>
+
     </div>
   );
 }

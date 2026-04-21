@@ -21,15 +21,11 @@ function durationToHours(duration) {
 // POST /api/user-paths/generate-suggestions
 router.post('/generate-suggestions', isAuthenticated, async (req, res) => {
   try {
-    const { topic, duration, clarificationAnswers } = req.body;
+    const { topic, duration, clarificationAnswers, topicType } = req.body;
 
     if (!topic || !duration) {
       return res.status(400).json({ error: 'Topic and duration are required' });
     }
-
-    const startingHours = durationToHours(duration);
-    const remainingBudget = Math.max(0, 10 - startingHours);
-    const minimumAdditional = Math.max(0, 5 - startingHours);
 
     const context = clarificationAnswers?.length > 0
       ? `User context: ${clarificationAnswers.join(', ')}`
@@ -40,15 +36,19 @@ router.post('/generate-suggestions', isAuthenticated, async (req, res) => {
       max_tokens: 1024,
       messages: [{
         role: 'user',
-        content: `A user wants to learn about "${topic}" with a ${duration} curriculum. ${context}
+        content: `A user wants to learn about "${topic}" with a ${duration} curriculum.
+Topic type: ${topicType || 'skill'}
+${context}
 
-Generate a suggested learning path for them. The path should:
-- Start with "${topic}" as the first curriculum (already selected, ${duration})
+Generate a suggested learning path with follow-on topics that build naturally on "${topic}".
+
+Guidelines:
 - Include 3-5 follow-on topics in logical learning progression order
 - Each follow-on topic should build naturally on the previous
-- Total additional duration should be between ${minimumAdditional} and ${remainingBudget} additional hours
-- Each follow-on topic duration should be 2hrs or 5hrs only
-- Total path duration including the starting topic must not exceed 10hrs
+- Choose durations (2hrs, 5hrs, 10hrs, 20hrs, 30hrs) that feel appropriate for each topic's depth — match the ambition of the starting duration
+- There is no maximum total duration — pick what genuinely makes sense for mastering this subject area
+- For skill topics, suggest a complete progression toward mastery
+- For subject topics, suggest complementary areas that deepen understanding
 
 Also generate:
 - A compelling path name (4-6 words)
@@ -63,7 +63,7 @@ Respond ONLY with this JSON, no explanation, no markdown fences:
       "topic": "string",
       "title": "string",
       "description": "string",
-      "duration": "2hrs or 5hrs",
+      "duration": "2hrs | 5hrs | 10hrs | 20hrs | 30hrs",
       "order": number starting from 1
     }
   ]
