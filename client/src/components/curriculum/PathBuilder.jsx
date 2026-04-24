@@ -4,6 +4,13 @@ import api from '../../services/api';
 const DURATION_OPTIONS = ['10min', '30min', '2hrs', '5hrs', '10hrs', '20hrs', '30hrs'];
 
 function PathBuilder({ topic, duration, clarificationAnswers, topicType, onConfirm, onSkip }) {
+  function toTitleCase(str) {
+    return str
+      .split(' ')
+      .map(word => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
+      .join(' ');
+  }
+
   const [loading, setLoading] = useState(false);
   const [checkingRelated, setCheckingRelated] = useState(true);
   const [relatedPath, setRelatedPath] = useState(null);
@@ -82,7 +89,7 @@ function PathBuilder({ topic, duration, clarificationAnswers, topicType, onConfi
       setPathDescription(pathDescription);
 
       const allCurricula = [
-        { ...startingCurriculum, title: topic, locked: true },
+        { ...startingCurriculum, title: startingCurriculum.displayTitle || toTitleCase(topic), locked: true },
         ...suggestions.map(s => ({ ...s, selected: true })),
       ];
 
@@ -245,11 +252,29 @@ function PathBuilder({ topic, duration, clarificationAnswers, topicType, onConfi
       </div>
 
       {/* Warning */}
-      {warning && (
-        <div className="p-4 bg-red-500/10 border border-red-500/30 rounded-lg">
-          <p className="text-red-400 font-body text-sm">{warning}</p>
-        </div>
-      )}
+      {(() => {
+        if (currentTotal > 75) return (
+          <div className="p-4 bg-red-500/10 border border-red-500/30 rounded-lg">
+            <p className="text-red-400 font-body text-sm font-semibold">Path limit reached. Please remove some topics to continue.</p>
+          </div>
+        );
+        if (currentTotal > 65) return (
+          <div className="p-4 bg-orange-500/10 border border-orange-500/30 rounded-lg">
+            <p className="text-orange-400 font-body text-sm">This is a major undertaking. You're close to the maximum path length.</p>
+          </div>
+        );
+        if (currentTotal > 50) return (
+          <div className="p-4 bg-yellow-500/10 border border-yellow-500/30 rounded-lg">
+            <p className="text-yellow-400 font-body text-sm">This path is getting ambitious. Make sure you have the time to see it through.</p>
+          </div>
+        );
+        if (currentTotal > 40) return (
+          <div className="p-4 bg-blue-500/10 border border-blue-500/30 rounded-lg">
+            <p className="text-blue-400 font-body text-sm">You're building something serious here. This is a real commitment.</p>
+          </div>
+        );
+        return null;
+      })()}
 
       {/* Curriculum list */}
       <div className="space-y-3">
@@ -351,7 +376,7 @@ function PathBuilder({ topic, duration, clarificationAnswers, topicType, onConfi
         <button
           type="button"
           onClick={handleConfirm}
-          disabled={!pathName.trim() || selectedList.length < 2}
+          disabled={!pathName.trim() || selectedList.length < 2 || currentTotal > 75}
           className="flex-1 px-8 py-4 bg-accent-500 text-white font-semibold rounded-lg hover:bg-accent-600 transition-all duration-200 shadow-lg font-body text-lg disabled:opacity-40 disabled:cursor-not-allowed"
         >
           Commit to Path · {formatHours(currentTotal)}
