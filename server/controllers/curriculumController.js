@@ -1,4 +1,5 @@
 const Anthropic = require('@anthropic-ai/sdk');
+const mongoose = require('mongoose');
 
 const anthropic = new Anthropic({
   apiKey: process.env.ANTHROPIC_API_KEY,
@@ -37,7 +38,7 @@ exports.analyse = async (req, res) => {
         role: 'user',
         content: `You are an AI learning assistant analyzing a user's learning request. Your job is to determine if their request is clear enough to create a curriculum, and classify what type of topic it is.
 
-User's request: "${topic}"
+User's request: <user_input>${topic}</user_input>
 
 Analyze this request and respond with a JSON object:
 {
@@ -91,7 +92,7 @@ Respond ONLY with the JSON object, no other text.`
 // Get all curricula for logged-in user
 exports.getUserCurricula = async (req, res) => {
   try {
-    const userId = req.user._id;
+    const userId = req.user.id;
     const Curriculum = require('../models/Curriculum');
 
     const curricula = await Curriculum.find({ userId })
@@ -112,8 +113,12 @@ exports.getUserCurricula = async (req, res) => {
 exports.getCurriculumById = async (req, res) => {
   try {
     const { id } = req.params;
-    const userId = req.user._id;
+    const userId = req.user.id;
     const Curriculum = require('../models/Curriculum');
+
+    if (!mongoose.Types.ObjectId.isValid(id)) {
+      return res.status(400).json({ error: 'Invalid ID' });
+    }
 
     const curriculum = await Curriculum.findOne({ _id: id, userId });
 
@@ -135,8 +140,12 @@ exports.getCurriculumById = async (req, res) => {
 exports.getFurtherLearning = async (req, res) => {
   try {
     const { id } = req.params;
-    const userId = req.user._id;
+    const userId = req.user.id;
     const Curriculum = require('../models/Curriculum');
+
+    if (!mongoose.Types.ObjectId.isValid(id)) {
+      return res.status(400).json({ error: 'Invalid ID' });
+    }
 
     const curriculum = await Curriculum.findOne({ _id: id, userId });
     
@@ -151,7 +160,7 @@ exports.getFurtherLearning = async (req, res) => {
       max_tokens: 2000,
       messages: [{
         role: 'user',
-        content: `The user just completed a learning curriculum on: "${curriculum.topic}"
+        content: `The user just completed a learning curriculum on: <user_input>${curriculum.topic}</user_input>
 
 Generate 5 contextual recommendations for what they should learn next. These should:
 - Build on what they just learned
@@ -190,8 +199,12 @@ Make the recommendations feel personal and encouraging. Respond ONLY with the JS
 exports.completeCurriculum = async (req, res) => {
   try {
     const { id } = req.params;
-    const userId = req.user._id;
+    const userId = req.user.id;
     const Curriculum = require('../models/Curriculum');
+
+    if (!mongoose.Types.ObjectId.isValid(id)) {
+      return res.status(400).json({ error: 'Invalid ID' });
+    }
 
     const curriculum = await Curriculum.findOne({ _id: id, userId });
     
@@ -234,8 +247,12 @@ exports.completeCurriculum = async (req, res) => {
 exports.deleteCurriculum = async (req, res) => {
   try {
     const { id } = req.params;
-    const userId = req.user._id;
+    const userId = req.user.id;
     const Curriculum = require('../models/Curriculum');
+
+    if (!mongoose.Types.ObjectId.isValid(id)) {
+      return res.status(400).json({ error: 'Invalid ID' });
+    }
 
     const curriculum = await Curriculum.findOneAndDelete({ _id: id, userId });
 
@@ -258,7 +275,7 @@ exports.deleteCurriculum = async (req, res) => {
 exports.generate = async (req, res) => {
   try {
     const { topic, duration, clarificationAnswers, pathSlug, courseIndex } = req.body;
-    const userId = req.user._id;
+    const userId = req.user.id;
 
     const VALID_DURATIONS = ['10min', '30min', '2hrs', '5hrs', '10hrs', '20hrs', '30hrs'];
     if (!topic || !duration) {
@@ -309,11 +326,11 @@ exports.generate = async (req, res) => {
     }
 
     // Build context for Claude
-    let contextPrompt = `Create a comprehensive learning curriculum for: "${topic}"
+    let contextPrompt = `Create a comprehensive learning curriculum for: <user_input>${topic}</user_input>
 Time commitment: ${duration}`;
 
     if (clarificationAnswers && clarificationAnswers.length > 0) {
-      contextPrompt += `\n\nAdditional context from user:\n${clarificationAnswers.join('\n')}`;
+      contextPrompt += `\n\nAdditional context from user:\n<user_context>${clarificationAnswers.join('\n')}</user_context>`;
     }
 
     const message = await callAnthropicWithRetry({
@@ -373,8 +390,8 @@ Respond ONLY with the JSON object, no other text.`
       max_tokens: 200,
       messages: [{
         role: 'user',
-        content: `Given this original learning topic input: "${topic}"
-${clarificationAnswers && clarificationAnswers.length > 0 ? `The user clarified their intent with these answers: ${clarificationAnswers.join(', ')}` : ''}
+        content: `Given this original learning topic input: <user_input>${topic}</user_input>
+${clarificationAnswers && clarificationAnswers.length > 0 ? `The user clarified their intent with these answers: <user_context>${clarificationAnswers.join(', ')}</user_context>` : ''}
 And duration: ${duration}
 
 Using the original topic AND the clarification answers together, infer what the user actually wants to learn and generate an accurate display title and subtitle.

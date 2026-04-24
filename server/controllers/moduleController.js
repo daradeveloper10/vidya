@@ -1,4 +1,5 @@
 const Anthropic = require('@anthropic-ai/sdk');
+const mongoose = require('mongoose');
 
 const anthropic = new Anthropic({
   apiKey: process.env.ANTHROPIC_API_KEY,
@@ -23,8 +24,12 @@ async function callAnthropicWithRetry(params, maxRetries = 3) {
 exports.generateLesson = async (req, res) => {
   try {
     const { curriculumId, moduleIndex } = req.params;
-    const userId = req.user._id;
+    const userId = req.user.id;
     const Curriculum = require('../models/Curriculum');
+
+    if (!mongoose.Types.ObjectId.isValid(curriculumId)) {
+      return res.status(400).json({ error: 'Invalid ID' });
+    }
 
     const curriculum = await Curriculum.findOne({ _id: curriculumId, userId });
     
@@ -154,8 +159,12 @@ Create engaging, educational content that:
 exports.generateQuiz = async (req, res) => {
   try {
     const { curriculumId, moduleIndex } = req.params;
-    const userId = req.user._id;
+    const userId = req.user.id;
     const Curriculum = require('../models/Curriculum');
+
+    if (!mongoose.Types.ObjectId.isValid(curriculumId)) {
+      return res.status(400).json({ error: 'Invalid ID' });
+    }
 
     const curriculum = await Curriculum.findOne({ _id: curriculumId, userId });
     
@@ -237,11 +246,15 @@ exports.submitQuiz = async (req, res) => {
   try {
     const { curriculumId, moduleIndex } = req.params;
     const { score, totalQuestions } = req.body;
-    const userId = req.user._id;
+    const userId = req.user.id;
     const Curriculum = require('../models/Curriculum');
 
     if (score === undefined || totalQuestions === undefined) {
       return res.status(400).json({ error: 'Score and totalQuestions are required' });
+    }
+
+    if (!mongoose.Types.ObjectId.isValid(curriculumId)) {
+      return res.status(400).json({ error: 'Invalid ID' });
     }
 
     const curriculum = await Curriculum.findOne({ _id: curriculumId, userId });
@@ -291,11 +304,15 @@ exports.explainDifferently = async (req, res) => {
   try {
     const { curriculumId, moduleIndex } = req.params;
     const { conceptText } = req.body;
-    const userId = req.user._id;
+    const userId = req.user.id;
     const Curriculum = require('../models/Curriculum');
 
     if (!conceptText) {
       return res.status(400).json({ error: 'Concept text is required' });
+    }
+
+    if (!mongoose.Types.ObjectId.isValid(curriculumId)) {
+      return res.status(400).json({ error: 'Invalid ID' });
     }
 
     const curriculum = await Curriculum.findOne({ _id: curriculumId, userId });
@@ -321,7 +338,7 @@ exports.explainDifferently = async (req, res) => {
         content: `The user is learning about: ${module.title}
 
 They want a different explanation of this concept:
-${conceptText}
+<user_concept>${conceptText}</user_concept>
 
 Provide an alternative explanation that:
 - Uses a completely different approach or analogy
@@ -352,7 +369,7 @@ Respond with just the alternative explanation in markdown format.`
 exports.trackTime = async (req, res) => {
   try {
     const { minutes } = req.body;
-    const userId = req.user._id;
+    const userId = req.user.id;
     const User = require('../models/User');
 
     if (!minutes || minutes <= 0) {

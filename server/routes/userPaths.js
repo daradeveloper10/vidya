@@ -4,6 +4,7 @@ const { isAuthenticated } = require('../middleware/auth');
 const UserGeneratedPath = require('../models/UserGeneratedPath');
 const Anthropic = require('@anthropic-ai/sdk');
 const rateLimit = require('express-rate-limit');
+const mongoose = require('mongoose');
 
 const anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
 
@@ -46,11 +47,11 @@ router.post('/generate-suggestions', isAuthenticated, aiLimiter, async (req, res
       max_tokens: 1024,
       messages: [{
         role: 'user',
-        content: `A user wants to learn about "${topic}" with a ${duration} curriculum.
+        content: `A user wants to learn about <user_topic>${topic}</user_topic> with a ${duration} curriculum.
 Topic type: ${topicType || 'skill'}
 ${context}
 
-Generate a suggested learning path with follow-on topics that build naturally on "${topic}".
+Generate a suggested learning path with follow-on topics that build naturally on <user_topic>${topic}</user_topic>.
 
 Guidelines:
 - Include 3-5 follow-on topics in logical learning progression order
@@ -125,12 +126,12 @@ router.post('/check-related', isAuthenticated, async (req, res) => {
       max_tokens: 256,
       messages: [{
         role: 'user',
-        content: `A user wants to learn about "${topic}".
+        content: `A user wants to learn about <user_topic>${topic}</user_topic>.
 
 They have these existing learning paths:
 ${pathSummaries.map(p => `${p.index}: "${p.name}" — covers: ${p.topics}`).join('\n')}
 
-Is any of these paths closely related to "${topic}" such that it would make sense to add "${topic}" to that path instead of creating a new one?
+Is any of these paths closely related to <user_topic>${topic}</user_topic> such that it would make sense to add <user_topic>${topic}</user_topic> to that path instead of creating a new one?
 
 Respond ONLY with JSON, no markdown:
 { "relatedIndex": number or null, "reason": "one sentence or null" }`
@@ -200,6 +201,10 @@ router.post('/:pathId/add-curriculum', isAuthenticated, async (req, res) => {
     const { curriculumId, order } = req.body;
     const userId = req.user.id;
 
+    if (!mongoose.Types.ObjectId.isValid(pathId)) {
+      return res.status(400).json({ error: 'Invalid ID' });
+    }
+
     const userPath = await UserGeneratedPath.findOne({ _id: pathId, userId });
     if (!userPath) return res.status(404).json({ error: 'Path not found' });
 
@@ -241,6 +246,10 @@ router.get('/:pathId', isAuthenticated, async (req, res) => {
     const { pathId } = req.params;
     const userId = req.user.id;
 
+    if (!mongoose.Types.ObjectId.isValid(pathId)) {
+      return res.status(400).json({ error: 'Invalid ID' });
+    }
+
     const userPath = await UserGeneratedPath.findOne({ _id: pathId, userId })
       .populate('curricula.curriculumId')
       .lean();
@@ -260,6 +269,10 @@ router.patch('/:pathId/progress', isAuthenticated, async (req, res) => {
     const { pathId } = req.params;
     const { currentCurriculumIndex, completedIndex } = req.body;
     const userId = req.user.id;
+
+    if (!mongoose.Types.ObjectId.isValid(pathId)) {
+      return res.status(400).json({ error: 'Invalid ID' });
+    }
 
     const userPath = await UserGeneratedPath.findOne({ _id: pathId, userId });
     if (!userPath) return res.status(404).json({ error: 'Path not found' });
@@ -290,6 +303,10 @@ router.post('/:pathId/add-topic', isAuthenticated, async (req, res) => {
     const { pathId } = req.params;
     const { topic, duration } = req.body;
     const userId = req.user.id;
+
+    if (!mongoose.Types.ObjectId.isValid(pathId)) {
+      return res.status(400).json({ error: 'Invalid ID' });
+    }
 
     const userPath = await UserGeneratedPath.findOne({ _id: pathId, userId });
     if (!userPath) return res.status(404).json({ error: 'Path not found' });
