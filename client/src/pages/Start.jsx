@@ -27,9 +27,18 @@ function Start() {
   useEffect(() => {
     if (loading) return;
     const topic = location.state?.topic || new URLSearchParams(location.search).get('topic') || '';
+    const skipToPathBuilder = location.state?.skipToPathBuilder || false;
+    const duration = location.state?.duration || '2hrs';
+    const clarificationAnswers = location.state?.clarificationAnswers || [];
+
     if (!topic) return;
     setTopicInput(topic);
-    if (isAuthenticated) {
+
+    if (isAuthenticated && skipToPathBuilder) {
+      setClarificationAnswers(clarificationAnswers);
+      setPathBuilderData({ topic, duration, clarificationAnswers, topicType: 'skill' });
+      setFlowState('pathBuilding');
+    } else if (isAuthenticated) {
       startLearningFlow(topic);
     }
     // If not authenticated, topic is pre-filled in input — user submits manually

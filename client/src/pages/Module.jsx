@@ -141,6 +141,13 @@ function Module() {
   const [loadingConcept, setLoadingConcept] = useState({});
   const [openConcept, setOpenConcept] = useState(null);
 
+  // Chat state
+  const [showChat, setShowChat] = useState(false);
+  const [chatQuestion, setChatQuestion] = useState('');
+  const [chatMessages, setChatMessages] = useState([]);
+  const [chatLoading, setChatLoading] = useState(false);
+  const chatBottomRef = useRef(null);
+
   const currentModule = curriculum?.modules?.[moduleIndex] || null;
 
   useEffect(() => {
@@ -411,6 +418,33 @@ function Module() {
     }
   };
 
+  const handleChatSubmit = async (e) => {
+    e.preventDefault();
+    if (!chatQuestion.trim() || chatLoading) return;
+    const userMessage = { role: 'user', content: chatQuestion };
+    const updatedMessages = [...chatMessages, userMessage];
+    setChatMessages(updatedMessages);
+    setChatQuestion('');
+    setChatLoading(true);
+    try {
+      const response = await api.post(
+        `/api/module/${curriculumId}/${moduleIndex}/chat`,
+        { question: chatQuestion, lessonContent, conversationHistory: chatMessages }
+      );
+      setChatMessages(prev => [...prev, { role: 'assistant', content: response.data.answer }]);
+    } catch (err) {
+      setChatMessages(prev => [...prev, { role: 'assistant', content: 'Sorry, I could not answer that. Please try again.' }]);
+    } finally {
+      setChatLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    if (chatBottomRef.current) {
+      chatBottomRef.current.scrollIntoView({ behavior: 'smooth' });
+    }
+  }, [chatMessages]);
+
   const handleModuleSelect = (index) => {
     setModuleIndex(index);
     setShowQuiz(false);
@@ -420,6 +454,9 @@ function Module() {
     setWrongConcepts([]);
     setConceptExplanations({});
     setOpenConcept(null);
+    setChatMessages([]);
+    setShowChat(false);
+    setChatQuestion('');
     setShowModuleList(false);
     window.scrollTo(0, 0);
   };
@@ -511,6 +548,9 @@ function Module() {
       setWrongConcepts([]);
       setConceptExplanations({});
       setOpenConcept(null);
+      setChatMessages([]);
+      setShowChat(false);
+      setChatQuestion('');
       window.scrollTo(0, 0);
     } else {
       navigate(`/complete/${curriculumId}`);
@@ -932,6 +972,79 @@ function Module() {
           </section>
         )}
       </main>
+
+      {!showQuiz && !showSummary && !loadingLesson && lessonContent && (
+        <div className="fixed bottom-6 right-6 z-50 flex flex-col items-end gap-3">
+          {showChat && (
+            <div className="w-80 sm:w-96 bg-primary-900 border border-primary-700 rounded-2xl shadow-2xl flex flex-col overflow-hidden" style={{ maxHeight: '480px' }}>
+              <div className="px-4 py-3 bg-primary-800 flex items-center justify-between flex-shrink-0">
+                <div>
+                  <p className="text-white font-body font-semibold text-sm">Ask about this module</p>
+                  <p className="text-primary-400 font-body text-xs truncate max-w-48">{currentModule?.title}</p>
+                </div>
+                <button onClick={() => setShowChat(false)} className="text-primary-400 hover:text-white transition-colors text-xl leading-none ml-2 flex-shrink-0">×</button>
+              </div>
+              <div className="flex-1 overflow-y-auto px-4 py-4 space-y-4 min-h-32">
+                {chatMessages.length === 0 && (
+                  <p className="text-primary-400 font-body text-sm">Ask any question about what you've learned — in this module or previous ones.</p>
+                )}
+                {chatMessages.map((msg, index) => (
+                  <div key={index} className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
+                    <div className={`max-w-xs rounded-xl px-3 py-2 text-sm font-body leading-relaxed ${
+                      msg.role === 'user' ? 'bg-accent-500 text-white rounded-br-sm' : 'bg-white/10 text-primary-200 rounded-bl-sm'
+                    }`}>
+                      {msg.content}
+                    </div>
+                  </div>
+                ))}
+                {chatLoading && (
+                  <div className="flex justify-start">
+                    <div className="bg-white/10 rounded-xl rounded-bl-sm px-3 py-2">
+                      <div className="flex items-center gap-1">
+                        <div className="w-1.5 h-1.5 bg-primary-400 rounded-full animate-bounce" style={{ animationDelay: '0ms' }}></div>
+                        <div className="w-1.5 h-1.5 bg-primary-400 rounded-full animate-bounce" style={{ animationDelay: '150ms' }}></div>
+                        <div className="w-1.5 h-1.5 bg-primary-400 rounded-full animate-bounce" style={{ animationDelay: '300ms' }}></div>
+                      </div>
+                    </div>
+                  </div>
+                )}
+                <div ref={chatBottomRef} />
+              </div>
+              <form onSubmit={handleChatSubmit} className="px-4 py-3 border-t border-primary-700 flex gap-2 flex-shrink-0">
+                <input
+                  type="text"
+                  value={chatQuestion}
+                  onChange={(e) => setChatQuestion(e.target.value)}
+                  placeholder="Ask a question..."
+                  disabled={chatLoading}
+                  className="flex-1 px-3 py-2 bg-white/10 border border-primary-700 rounded-lg text-white placeholder-primary-400 focus:outline-none focus:border-accent-500 transition-colors font-body text-sm disabled:opacity-50"
+                />
+                <button
+                  type="submit"
+                  disabled={chatLoading || !chatQuestion.trim()}
+                  className="px-3 py-2 bg-accent-500 text-white rounded-lg hover:bg-accent-600 transition-colors disabled:opacity-40 disabled:cursor-not-allowed font-body text-sm flex-shrink-0"
+                >
+                  Send
+                </button>
+              </form>
+            </div>
+          )}
+          <button
+            onClick={() => setShowChat(!showChat)}
+            className={`w-14 h-14 text-white rounded-full shadow-lg flex items-center justify-center transition-all hover:scale-105 ${
+              showChat ? 'bg-primary-700 hover:bg-primary-600' : 'bg-accent-500 hover:bg-accent-600'
+            }`}
+          >
+            {showChat ? (
+              <span className="text-xl">×</span>
+            ) : (
+              <svg xmlns="http://www.w3.org/2000/svg" className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z" />
+              </svg>
+            )}
+          </button>
+        </div>
+      )}
 
       {showPaywall && (
         <Paywall

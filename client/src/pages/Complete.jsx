@@ -10,6 +10,7 @@ function Complete() {
   const [curriculum, setCurriculum] = useState(null);
   const [recommendations, setRecommendations] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [showPathPrompt, setShowPathPrompt] = useState(true);
   const [stats, setStats] = useState({
     modulesCompleted: 0,
     averageScore: 0,
@@ -190,6 +191,42 @@ function Complete() {
             Keep building on what you've learned!
           </p>
         </section>
+
+        {/* Path Prompt */}
+        {!curriculum?.pathSlug && showPathPrompt && (
+          <div className="p-6 bg-accent-500/10 border border-accent-500/30 rounded-xl space-y-4">
+            <div className="space-y-2">
+              <p className="text-accent-400 font-heading font-bold text-lg">Keep the momentum going 🚀</p>
+              <p className="text-primary-200 font-body">
+                You've just completed <span className="text-white font-semibold">{curriculum?.topic}</span>. Want to build on this and turn it into a full learning path?
+              </p>
+              <p className="text-primary-300 font-body text-sm">
+                Claude will suggest related topics to take your knowledge further.
+              </p>
+            </div>
+            <div className="flex gap-3 flex-wrap">
+              <button
+                onClick={() => navigate('/start', {
+                  state: {
+                    topic: curriculum?.topic,
+                    duration: curriculum?.duration,
+                    clarificationAnswers: curriculum?.clarificationAnswers || [],
+                    skipToPathBuilder: true,
+                  }
+                })}
+                className="px-6 py-3 bg-accent-500 text-white font-semibold rounded-lg hover:bg-accent-600 transition-colors font-body"
+              >
+                Build a Learning Path →
+              </button>
+              <button
+                onClick={() => setShowPathPrompt(false)}
+                className="px-6 py-3 text-primary-300 hover:text-white transition-colors font-body"
+              >
+                Maybe later
+              </button>
+            </div>
+          </div>
+        )}
 
         {/* Further Learning Section */}
         <section className="space-y-8">
