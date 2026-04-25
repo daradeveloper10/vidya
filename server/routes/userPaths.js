@@ -42,6 +42,9 @@ router.post('/generate-suggestions', isAuthenticated, aiLimiter, async (req, res
       ? `User context: ${clarificationAnswers.join(', ')}`
       : '';
 
+    const startingHours = durationToHours(duration);
+    const remainingBudget = Math.floor(75 - startingHours);
+
     const message = await anthropic.messages.create({
       model: 'claude-sonnet-4-20250514',
       max_tokens: 1024,
@@ -51,15 +54,21 @@ router.post('/generate-suggestions', isAuthenticated, aiLimiter, async (req, res
 Topic type: ${topicType || 'skill'}
 ${context}
 
-Generate a suggested learning path with follow-on topics that build naturally on <user_topic>${topic}</user_topic>.
+Generate a suggested learning path with follow-on topics that build naturally on "${topic}".
+
+CRITICAL BUDGET RULE:
+- The starting curriculum is ${duration} (${startingHours} hours)
+- The remaining budget for ALL follow-on topics combined is ${remainingBudget} hours
+- The total of all follow-on topic durations MUST NOT exceed ${remainingBudget} hours
+- Choose fewer topics or shorter durations to stay within budget
+- Never suggest a path where starting hours + follow-on hours exceeds 75 hours total
 
 Guidelines:
 - Include 3-5 follow-on topics in logical learning progression order
 - Each follow-on topic should build naturally on the previous
-- Choose durations (2hrs, 5hrs, 10hrs, 20hrs, 30hrs) that feel appropriate for each topic's depth — match the ambition of the starting duration
-- There is no maximum total duration — pick what genuinely makes sense for mastering this subject area
-- For skill topics, suggest a complete progression toward mastery
-- For subject topics, suggest complementary areas that deepen understanding
+- Choose durations (2hrs, 5hrs, 10hrs, 20hrs, 30hrs) that fit within the remaining budget
+- For skill topics, suggest a complete progression toward mastery within the budget
+- For subject topics, suggest complementary areas that deepen understanding within the budget
 
 Also generate:
 - A compelling path name (4-6 words)

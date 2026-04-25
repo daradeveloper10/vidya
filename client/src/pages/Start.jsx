@@ -1,7 +1,6 @@
 import { useAuth } from '../context/AuthContext';
 import ClarificationChat from '../components/curriculum/ClarificationChat';
 import TimeSelection from '../components/curriculum/TimeSelection';
-import PathBuilder from '../components/curriculum/PathBuilder';
 import SignInModal from '../components/ui/SignInModal';
 import AppHeader from '../components/ui/AppHeader';
 import GoogleSignInButton from '../components/ui/GoogleSignInButton';
@@ -19,7 +18,6 @@ function Start() {
   const [clarificationQuestions, setClarificationQuestions] = useState([]);
   const [clarificationOptions, setClarificationOptions] = useState([]);
   const [clarificationAnswers, setClarificationAnswers] = useState([]);
-  const [pathBuilderData, setPathBuilderData] = useState(null);
   const [showSignInModal, setShowSignInModal] = useState(false);
   const [topicType, setTopicType] = useState('skill');
 
@@ -27,18 +25,11 @@ function Start() {
   useEffect(() => {
     if (loading) return;
     const topic = location.state?.topic || new URLSearchParams(location.search).get('topic') || '';
-    const skipToPathBuilder = location.state?.skipToPathBuilder || false;
-    const duration = location.state?.duration || '2hrs';
-    const clarificationAnswers = location.state?.clarificationAnswers || [];
 
     if (!topic) return;
     setTopicInput(topic);
 
-    if (isAuthenticated && skipToPathBuilder) {
-      setClarificationAnswers(clarificationAnswers);
-      setPathBuilderData({ topic, duration, clarificationAnswers, topicType: 'skill' });
-      setFlowState('pathBuilding');
-    } else if (isAuthenticated) {
+    if (isAuthenticated) {
       startLearningFlow(topic);
     }
     // If not authenticated, topic is pre-filled in input — user submits manually
@@ -51,7 +42,6 @@ function Start() {
     setTopicInput(topic);
     setFlowState('initial');
     setClarificationAnswers([]);
-    setPathBuilderData(null);
     if (isAuthenticated) {
       startLearningFlow(topic);
     }
@@ -125,38 +115,9 @@ function Start() {
     }
   };
 
-  const DURATIONS_REQUIRING_PATH = ['2hrs', '5hrs', '10hrs'];
-
   const handleTimeSelection = (duration) => {
-    const shouldOfferPath = DURATIONS_REQUIRING_PATH.includes(duration) && topicType !== 'concept';
-    if (shouldOfferPath) {
-      setPathBuilderData({ topic: topicInput, duration, clarificationAnswers, topicType });
-      setFlowState('pathBuilding');
-    } else {
-      navigate('/learn', {
-        state: { topic: topicInput, duration, clarificationAnswers }
-      });
-    }
-  };
-
-  const handlePathConfirm = (pathData) => {
     navigate('/learn', {
-      state: {
-        topic: topicInput,
-        duration: pathBuilderData.duration,
-        clarificationAnswers,
-        pathData,
-      }
-    });
-  };
-
-  const handlePathSkip = () => {
-    navigate('/learn', {
-      state: {
-        topic: topicInput,
-        duration: pathBuilderData.duration,
-        clarificationAnswers,
-      }
+      state: { topic: topicInput, duration, clarificationAnswers, topicType }
     });
   };
 
@@ -230,17 +191,6 @@ function Start() {
 
         {flowState === 'timeSelection' && (
           <TimeSelection onSelect={handleTimeSelection} />
-        )}
-
-        {flowState === 'pathBuilding' && pathBuilderData && (
-          <PathBuilder
-            topic={pathBuilderData.topic}
-            duration={pathBuilderData.duration}
-            clarificationAnswers={clarificationAnswers}
-            topicType={pathBuilderData.topicType}
-            onConfirm={handlePathConfirm}
-            onSkip={handlePathSkip}
-          />
         )}
 
       </main>
