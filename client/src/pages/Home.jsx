@@ -53,12 +53,12 @@ function Home() {
       }
     } catch (err) {
       setSparkTopics([
-        { topic: 'Machine Learning', promptPhrasing: 'Machine Learning' },
-        { topic: 'Quantum Computing', promptPhrasing: 'Quantum Computing' },
-        { topic: 'Blockchain', promptPhrasing: 'Blockchain Technology' },
-        { topic: 'Neuroscience', promptPhrasing: 'Neuroscience' },
-        { topic: 'Climate Science', promptPhrasing: 'Climate Science' },
-        { topic: 'Cryptography', promptPhrasing: 'Cryptography' },
+        { topic: 'How the stock market works', promptPhrasing: 'How the stock market works' },
+        { topic: 'The psychology of persuasion', promptPhrasing: 'The psychology of persuasion' },
+        { topic: 'Building a startup from scratch', promptPhrasing: 'Building a startup from scratch' },
+        { topic: 'How artificial intelligence works', promptPhrasing: 'How artificial intelligence works' },
+        { topic: 'The science of habit formation', promptPhrasing: 'The science of habit formation' },
+        { topic: 'Why the Roman Empire fell', promptPhrasing: 'Why the Roman Empire fell' },
       ]);
     } finally {
       setSparkLoading(false);
