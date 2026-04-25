@@ -104,9 +104,25 @@ function Start() {
     await startLearningFlow(topicInput);
   };
 
-  const handleClarificationComplete = (answers) => {
+  const handleClarificationComplete = async (answers, questions) => {
     setClarificationAnswers(answers);
-    setFlowState('timeSelection');
+    try {
+      setFlowState('analysing');
+      const response = await api.post('/api/curriculum/validate-answers', {
+        topic: topicInput,
+        questions,
+        clarificationAnswers: answers,
+      });
+      if (response.data.sufficient) {
+        setFlowState('timeSelection');
+      } else {
+        setClarificationQuestions([response.data.followUpQuestion]);
+        setClarificationOptions([]);
+        setFlowState('clarifying');
+      }
+    } catch (err) {
+      setFlowState('timeSelection');
+    }
   };
 
   const DURATIONS_REQUIRING_PATH = ['2hrs', '5hrs', '10hrs'];

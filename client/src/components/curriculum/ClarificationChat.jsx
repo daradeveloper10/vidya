@@ -16,7 +16,7 @@ function ClarificationChat({ questions, options, onComplete }) {
       setCurrentQuestionIndex(currentQuestionIndex + 1);
     } else {
       // All questions answered
-      onComplete(newAnswers);
+      onComplete(newAnswers, questions);
     }
   };
 
@@ -33,7 +33,7 @@ function ClarificationChat({ questions, options, onComplete }) {
         setCurrentQuestionIndex(currentQuestionIndex + 1);
       } else {
         // All questions answered
-        onComplete(newAnswers);
+        onComplete(newAnswers, questions);
       }
     }
   };
