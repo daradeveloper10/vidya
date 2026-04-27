@@ -9,6 +9,14 @@ import { useState, useEffect } from 'react';
 import api from '../services/api';
 
 function Start() {
+  function toTitleCase(str) {
+    if (!str) return '';
+    return str
+      .split(' ')
+      .map(word => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
+      .join(' ');
+  }
+
   const { isAuthenticated, loading } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
@@ -20,6 +28,7 @@ function Start() {
   const [clarificationAnswers, setClarificationAnswers] = useState([]);
   const [showSignInModal, setShowSignInModal] = useState(false);
   const [topicType, setTopicType] = useState('skill');
+  const [confirmationData, setConfirmationData] = useState(null);
 
   // Wait for auth to resolve then auto-start if topic is pre-filled
   useEffect(() => {
@@ -116,9 +125,13 @@ function Start() {
   };
 
   const handleTimeSelection = (duration) => {
-    navigate('/learn', {
-      state: { topic: topicInput, duration, clarificationAnswers, topicType }
+    setConfirmationData({
+      topic: topicInput,
+      duration,
+      clarificationAnswers,
+      topicType,
     });
+    setFlowState('confirmation');
   };
 
   if (loading) {
@@ -191,6 +204,72 @@ function Start() {
 
         {flowState === 'timeSelection' && (
           <TimeSelection onSelect={handleTimeSelection} />
+        )}
+
+        {flowState === 'confirmation' && confirmationData && (
+          <div className="space-y-8 animate-fade-in">
+            <div className="text-center space-y-2">
+              <h2 className="text-3xl font-heading font-bold text-white">Ready to start?</h2>
+              <p className="text-primary-300 font-body">Here's what you're about to learn</p>
+            </div>
+
+            <div className="bg-white/5 border border-primary-700 rounded-xl p-6 space-y-4">
+              <div className="flex items-center justify-between">
+                <div className="space-y-1">
+                  <p className="text-primary-400 font-body text-sm uppercase tracking-wide">Topic</p>
+                  <p className="text-white font-heading font-bold text-2xl">{toTitleCase(confirmationData.topic)}</p>
+                </div>
+                <div className="text-right space-y-1">
+                  <p className="text-primary-400 font-body text-sm uppercase tracking-wide">Duration</p>
+                  <p className="text-accent-400 font-heading font-bold text-2xl">{confirmationData.duration}</p>
+                </div>
+              </div>
+              {confirmationData.clarificationAnswers?.length > 0 && (
+                <div className="pt-3 border-t border-primary-700">
+                  <p className="text-primary-400 font-body text-sm">
+                    {confirmationData.clarificationAnswers.join(' · ')}
+                  </p>
+                </div>
+              )}
+            </div>
+
+            <div className="space-y-3">
+              <button
+                onClick={() => {
+                  navigate('/learn', {
+                    state: {
+                      topic: confirmationData.topic,
+                      duration: confirmationData.duration,
+                      clarificationAnswers: confirmationData.clarificationAnswers,
+                      topicType: confirmationData.topicType,
+                    }
+                  });
+                }}
+                className="w-full px-8 py-4 bg-accent-500 text-white font-semibold rounded-lg hover:bg-accent-600 transition-all duration-200 shadow-lg font-body text-lg"
+              >
+                Start Learning →
+              </button>
+
+              <button
+                onClick={() => setFlowState('timeSelection')}
+                className="w-full px-8 py-4 bg-white/5 border border-primary-700 text-primary-200 font-body rounded-lg hover:bg-white/10 transition-colors"
+              >
+                ← Change duration
+              </button>
+
+              <button
+                onClick={() => {
+                  setTopicInput('');
+                  setClarificationAnswers([]);
+                  setConfirmationData(null);
+                  setFlowState('initial');
+                }}
+                className="w-full px-4 py-2 text-primary-400 hover:text-white transition-colors font-body text-sm text-center"
+              >
+                ← Start over with a different topic
+              </button>
+            </div>
+          </div>
         )}
 
       </main>
