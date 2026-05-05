@@ -191,19 +191,62 @@ function Start() {
           <div className="text-center space-y-4 animate-fade-in py-20">
             <div className="inline-block animate-spin rounded-full h-12 w-12 border-b-2 border-accent-500"></div>
             <p className="text-xl text-primary-200 font-body">Analysing your request...</p>
+            <div className="text-center pt-4">
+              <button
+                onClick={() => {
+                  setTopicInput('');
+                  setClarificationAnswers([]);
+                  setConfirmationData(null);
+                  setFlowState('initial');
+                }}
+                className="text-primary-500 hover:text-primary-300 transition-colors font-body text-sm"
+              >
+                ← Start over with a different topic
+              </button>
+            </div>
           </div>
         )}
 
         {flowState === 'clarifying' && (
-          <ClarificationChat
-            questions={clarificationQuestions}
-            options={clarificationOptions}
-            onComplete={handleClarificationComplete}
-          />
+          <div className="space-y-4">
+            <ClarificationChat
+              questions={clarificationQuestions}
+              options={clarificationOptions}
+              onComplete={handleClarificationComplete}
+            />
+            <div className="text-center pt-4">
+              <button
+                onClick={() => {
+                  setTopicInput('');
+                  setClarificationAnswers([]);
+                  setConfirmationData(null);
+                  setFlowState('initial');
+                }}
+                className="text-primary-500 hover:text-primary-300 transition-colors font-body text-sm"
+              >
+                ← Start over with a different topic
+              </button>
+            </div>
+          </div>
         )}
 
         {flowState === 'timeSelection' && (
-          <TimeSelection onSelect={handleTimeSelection} />
+          <div className="space-y-4">
+            <TimeSelection onSelect={handleTimeSelection} />
+            <div className="text-center pt-4">
+              <button
+                onClick={() => {
+                  setTopicInput('');
+                  setClarificationAnswers([]);
+                  setConfirmationData(null);
+                  setFlowState('initial');
+                }}
+                className="text-primary-500 hover:text-primary-300 transition-colors font-body text-sm"
+              >
+                ← Start over with a different topic
+              </button>
+            </div>
+          </div>
         )}
 
         {flowState === 'confirmation' && confirmationData && (
@@ -256,7 +299,9 @@ function Start() {
               >
                 ← Change duration
               </button>
+            </div>
 
+            <div className="text-center pt-4">
               <button
                 onClick={() => {
                   setTopicInput('');
@@ -264,7 +309,7 @@ function Start() {
                   setConfirmationData(null);
                   setFlowState('initial');
                 }}
-                className="w-full px-4 py-2 text-primary-400 hover:text-white transition-colors font-body text-sm text-center"
+                className="text-primary-500 hover:text-primary-300 transition-colors font-body text-sm"
               >
                 ← Start over with a different topic
               </button>
