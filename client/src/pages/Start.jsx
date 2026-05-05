@@ -193,12 +193,7 @@ function Start() {
             <p className="text-xl text-primary-200 font-body">Analysing your request...</p>
             <div className="text-center pt-4">
               <button
-                onClick={() => {
-                  setTopicInput('');
-                  setClarificationAnswers([]);
-                  setConfirmationData(null);
-                  setFlowState('initial');
-                }}
+                onClick={() => navigate('/')}
                 className="text-primary-500 hover:text-primary-300 transition-colors font-body text-sm"
               >
                 ← Start over with a different topic
@@ -216,12 +211,7 @@ function Start() {
             />
             <div className="text-center pt-4">
               <button
-                onClick={() => {
-                  setTopicInput('');
-                  setClarificationAnswers([]);
-                  setConfirmationData(null);
-                  setFlowState('initial');
-                }}
+                onClick={() => navigate('/')}
                 className="text-primary-500 hover:text-primary-300 transition-colors font-body text-sm"
               >
                 ← Start over with a different topic
@@ -235,12 +225,7 @@ function Start() {
             <TimeSelection onSelect={handleTimeSelection} />
             <div className="text-center pt-4">
               <button
-                onClick={() => {
-                  setTopicInput('');
-                  setClarificationAnswers([]);
-                  setConfirmationData(null);
-                  setFlowState('initial');
-                }}
+                onClick={() => navigate('/')}
                 className="text-primary-500 hover:text-primary-300 transition-colors font-body text-sm"
               >
                 ← Start over with a different topic
@@ -303,12 +288,7 @@ function Start() {
 
             <div className="text-center pt-4">
               <button
-                onClick={() => {
-                  setTopicInput('');
-                  setClarificationAnswers([]);
-                  setConfirmationData(null);
-                  setFlowState('initial');
-                }}
+                onClick={() => navigate('/')}
                 className="text-primary-500 hover:text-primary-300 transition-colors font-body text-sm"
               >
                 ← Start over with a different topic
