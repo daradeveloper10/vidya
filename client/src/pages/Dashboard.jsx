@@ -234,7 +234,7 @@ function Dashboard() {
                       <div className="flex-shrink-0">
                         {path.status !== 'completed' && currentCurriculum?.curriculumId && (
                           <button
-                            onClick={() => navigate(`/module/${currentCurriculum.curriculumId}/0`)}
+                            onClick={() => navigate(`/my-path/${path._id}`)}
                             className="px-6 py-3 bg-accent-500 text-white font-semibold rounded-lg hover:bg-accent-600 transition-all duration-200 font-body"
                           >
                             Resume →

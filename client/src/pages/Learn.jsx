@@ -1,5 +1,5 @@
 import { useLocation, useNavigate } from 'react-router-dom';
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import { useAuth } from '../context/AuthContext';
 import PathBuilder from '../components/curriculum/PathBuilder';
 import api from '../services/api';
@@ -16,6 +16,7 @@ function Learn() {
   const location = useLocation();
   const navigate = useNavigate();
   const { user } = useAuth();
+  const hasGenerated = useRef(false);
   const [loadingMessageIndex, setLoadingMessageIndex] = useState(0);
   const [curriculum, setCurriculum] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -41,8 +42,10 @@ function Learn() {
       navigate('/');
       return;
     }
+    if (hasGenerated.current) return;
+    hasGenerated.current = true;
     generateCurriculum();
-  }, [location.state, navigate]);
+  }, []);
 
   useEffect(() => {
     const timer = setInterval(() => {
