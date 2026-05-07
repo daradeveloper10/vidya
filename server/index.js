@@ -19,6 +19,9 @@ const { startTopicRefreshJob } = require('./jobs/topicRefreshJob');
 const app = express();
 const PORT = process.env.PORT || 3000;
 
+// Trust proxy for accurate IP addresses behind reverse proxy
+app.set('trust proxy', 1);
+
 // Security middleware
 const helmet = require('helmet');
 const rateLimit = require('express-rate-limit');
@@ -44,7 +47,8 @@ const generalLimiter = rateLimit({
   max: 100,
   standardHeaders: true,
   legacyHeaders: false,
-  message: { error: 'Too many requests, please try again later' }
+  message: { error: 'Too many requests, please try again later' },
+  keyGenerator: (req) => req.user?.id || req.ips[0] || req.ip,
 });
 
 app.use('/api', generalLimiter);

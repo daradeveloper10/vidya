@@ -133,7 +133,15 @@ function UserPathDetail() {
         </div>
 
         <div className="space-y-3">
-          <p className="text-primary-300 font-body text-xs uppercase tracking-wide">Your curricula</p>
+          <div className="flex items-center justify-between">
+            <p className="text-primary-300 font-body text-xs uppercase tracking-wide">Your curricula</p>
+            <button
+              onClick={fetchPath}
+              className="text-primary-400 hover:text-white transition-colors font-body text-xs flex items-center gap-1"
+            >
+              ↻ Refresh
+            </button>
+          </div>
 
           {path.curricula.map((curriculum, index) => {
             const isCompleted = curriculum.completed;

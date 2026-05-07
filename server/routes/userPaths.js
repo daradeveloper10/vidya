@@ -13,7 +13,7 @@ const aiLimiter = rateLimit({
   max: 20,
   standardHeaders: true,
   legacyHeaders: false,
-  keyGenerator: (req) => req.user?.id || req.ip,
+  keyGenerator: (req) => req.user?.id || req.ips[0] || req.ip,
   message: { error: 'You have reached the limit for AI requests. Please try again in an hour.' }
 });
 
