@@ -342,4 +342,24 @@ router.post('/:pathId/add-topic', isAuthenticated, async (req, res) => {
   }
 });
 
+// DELETE /api/user-paths/:pathId
+router.delete('/:pathId', isAuthenticated, async (req, res) => {
+  try {
+    const { pathId } = req.params;
+    const userId = req.user.id;
+
+    if (!mongoose.Types.ObjectId.isValid(pathId)) {
+      return res.status(400).json({ error: 'Invalid ID' });
+    }
+
+    const userPath = await UserGeneratedPath.findOneAndDelete({ _id: pathId, userId });
+    if (!userPath) return res.status(404).json({ error: 'Path not found' });
+
+    res.json({ success: true });
+  } catch (err) {
+    console.error('[DELETE /:pathId] Error:', err.message);
+    res.status(500).json({ error: 'Failed to delete path' });
+  }
+});
+
 module.exports = router;

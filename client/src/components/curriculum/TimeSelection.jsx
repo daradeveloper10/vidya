@@ -1,6 +1,6 @@
 function TimeSelection({ onSelect }) {
   const timeOptions = [
-    { value: '2min', label: '2 minutes', description: 'One core idea to remember' },
+    
     { value: '10min', label: '10 minutes', description: 'The mental model explained' },
     { value: '30min', label: '30 minutes', description: 'Foundation with a real example' },
     { value: '2hrs', label: '2 hours', description: 'Solid working knowledge' },
