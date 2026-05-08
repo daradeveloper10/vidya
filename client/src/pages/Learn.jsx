@@ -23,6 +23,7 @@ function Learn() {
   const [showPathPrompt, setShowPathPrompt] = useState(false);
   const [pathBuilderVisible, setPathBuilderVisible] = useState(false);
   const [pathConfirmationData, setPathConfirmationData] = useState(null);
+  const [confirmingPath, setConfirmingPath] = useState(false);
 
   const { topic, duration, pathData, topicType } = location.state || {};
 
@@ -74,51 +75,6 @@ function Learn() {
         setShowPathPrompt(true);
       }
 
-      // If part of a user-generated path, create path in background — fire and forget
-      if (currPathData && curriculumData.curriculumId) {
-        (async () => {
-          try {
-            // Create the path
-            const pathResponse = await api.post('/api/user-paths/create', {
-              pathName: currPathData.pathName,
-              pathDescription: currPathData.pathDescription,
-              curricula: currPathData.curricula,
-            });
-
-            const newPathId = pathResponse.data.pathId;
-
-            // Link first curriculum
-            await api.post(`/api/user-paths/${newPathId}/add-curriculum`, {
-              curriculumId: curriculumData.curriculumId,
-              order: 0,
-            });
-
-            // Generate and link remaining curricula sequentially in background
-            const remainingCurricula = currPathData.curricula.slice(1);
-            for (let i = 0; i < remainingCurricula.length; i++) {
-              try {
-                const c = remainingCurricula[i];
-                const genResponse = await api.post('/api/curriculum/generate', {
-                  topic: c.topic,
-                  duration: c.duration,
-                  clarificationAnswers: [],
-                });
-                if (genResponse.data.curriculumId) {
-                  await api.post(`/api/user-paths/${newPathId}/add-curriculum`, {
-                    curriculumId: genResponse.data.curriculumId,
-                    order: i + 1,
-                  });
-                }
-              } catch (err) {
-                console.error(`Error generating curriculum ${i + 1} in path:`, err.message);
-              }
-            }
-          } catch (err) {
-            console.error('Error creating user path:', err.message);
-          }
-        })();
-      }
-
     } catch (error) {
       navigate('/');
     }
@@ -128,6 +84,49 @@ function Learn() {
     navigate('/dashboard', {
       state: { newCurriculumId: curriculum.curriculumId }
     });
+  };
+
+  const handlePathConfirm = async (pathData) => {
+    setConfirmingPath(true);
+    try {
+      const pathResponse = await api.post('/api/user-paths/create', {
+        pathName: pathData.pathName,
+        pathDescription: pathData.pathDescription,
+        curricula: pathData.curricula,
+      });
+
+      const newPathId = pathResponse.data.pathId;
+
+      await api.post(`/api/user-paths/${newPathId}/add-curriculum`, {
+        curriculumId: curriculum.curriculumId,
+        order: 0,
+      });
+
+      const remainingCurricula = pathData.curricula.slice(1);
+      for (let i = 0; i < remainingCurricula.length; i++) {
+        try {
+          const c = remainingCurricula[i];
+          const genResponse = await api.post('/api/curriculum/generate', {
+            topic: c.topic,
+            duration: c.duration,
+            clarificationAnswers: [],
+          });
+          if (genResponse.data.curriculumId) {
+            await api.post(`/api/user-paths/${newPathId}/add-curriculum`, {
+              curriculumId: genResponse.data.curriculumId,
+              order: i + 1,
+            });
+          }
+        } catch (err) {
+          console.error(`Error generating curriculum ${i + 1}:`, err.message);
+        }
+      }
+
+      navigate(`/my-path/${newPathId}`);
+    } catch (err) {
+      console.error('Error confirming path:', err.message);
+      setConfirmingPath(false);
+    }
   };
 
   if (loading) {
@@ -279,17 +278,18 @@ function Learn() {
 
               <div className="space-y-3">
                 <button
-                  onClick={() => {
-                    navigate('/learn', {
-                      state: {
-                        ...location.state,
-                        pathData: pathConfirmationData,
-                      }
-                    });
-                  }}
-                  className="w-full px-8 py-4 bg-accent-500 text-white font-semibold rounded-lg hover:bg-accent-600 transition-all duration-200 shadow-lg font-body text-lg"
+                  onClick={() => handlePathConfirm(pathConfirmationData)}
+                  disabled={confirmingPath}
+                  className="w-full px-8 py-4 bg-accent-500 text-white font-semibold rounded-lg hover:bg-accent-600 transition-all duration-200 shadow-lg font-body text-lg disabled:opacity-70"
                 >
-                  Confirm & Start Learning →
+                  {confirmingPath ? (
+                    <span className="flex items-center justify-center gap-3">
+                      <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white"></div>
+                      Building your path...
+                    </span>
+                  ) : (
+                    'Confirm & Start Learning →'
+                  )}
                 </button>
 
                 <button

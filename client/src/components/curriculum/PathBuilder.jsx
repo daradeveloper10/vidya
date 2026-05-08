@@ -278,6 +278,9 @@ function PathBuilder({ topic, duration, clarificationAnswers, topicType, onConfi
 
       {/* Curriculum list */}
       <div className="space-y-3">
+        <p className="text-primary-400 font-body text-sm text-center pb-2">
+          Tap any topic to include or exclude it from your path
+        </p>
         {curricula.map((c, index) => {
           const isSelected = c.locked || c.selected;
           return (
@@ -289,7 +292,7 @@ function PathBuilder({ topic, duration, clarificationAnswers, topicType, onConfi
                   ? 'bg-accent-500/10 border-accent-500/50 cursor-default'
                   : isSelected
                   ? 'bg-white/10 border-accent-500 cursor-pointer'
-                  : 'bg-white/5 border-primary-700 cursor-pointer opacity-60'
+                  : 'bg-white/5 border-primary-700 cursor-pointer opacity-40 line-through-none'
               }`}
             >
               <div className="flex items-center gap-4">
@@ -302,7 +305,9 @@ function PathBuilder({ topic, duration, clarificationAnswers, topicType, onConfi
                 </div>
                 <div className="flex-1">
                   <div className="flex items-center gap-2 flex-wrap">
-                    <p className="text-white font-body font-semibold">{c.title || c.topic}</p>
+                    <p className={`font-body font-semibold ${!c.locked && !c.selected ? 'text-primary-500 line-through' : 'text-white'}`}>
+                      {c.title || c.topic}
+                    </p>
                     {c.locked && (
                       <span className="px-2 py-0.5 bg-accent-500/20 text-accent-400 text-xs rounded-full font-body">Starting point</span>
                     )}
@@ -311,7 +316,14 @@ function PathBuilder({ topic, duration, clarificationAnswers, topicType, onConfi
                     <p className="text-primary-300 font-body text-sm mt-0.5">{c.description}</p>
                   )}
                 </div>
-                <span className="text-primary-400 font-body text-sm flex-shrink-0">{c.duration}</span>
+                <div className="flex flex-col items-end gap-1 flex-shrink-0">
+                  <span className="text-primary-400 font-body text-sm">{c.duration}</span>
+                  {!c.locked && (
+                    <span className={`text-xs font-body ${c.selected ? 'text-red-400' : 'text-accent-400'}`}>
+                      {c.selected ? 'Remove' : 'Add back'}
+                    </span>
+                  )}
+                </div>
               </div>
             </div>
           );
