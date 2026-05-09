@@ -140,7 +140,7 @@ function Dashboard() {
           title: path?.title || 'Learning Path',
           subtitle: `${totalCourses} courses`,
           progress: progressPercent,
-          updatedAt: up.updatedAt,
+          updatedAt: up.updatedAt || up.createdAt || new Date().toISOString(),
           data: up,
           pathSlug: path?.slug,
         });
@@ -242,7 +242,7 @@ function Dashboard() {
         {/* ZONE 1: Continue Learning */}
         <section className="space-y-6">
           <h1 className="text-4xl font-heading font-bold text-white">
-            Welcome back, {user?.name?.split(' ')[0]}
+            Welcome back, {user?.name?.split(' ')[0]?.charAt(0).toUpperCase() + user?.name?.split(' ')[0]?.slice(1)}
           </h1>
 
           {inProgressCurriculum ? (
