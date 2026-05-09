@@ -11,6 +11,7 @@ function CurriculumDetail() {
   const { isAuthenticated } = useAuth();
   const [curriculum, setCurriculum] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [expandedMobileModule, setExpandedMobileModule] = useState(null);
 
   useEffect(() => {
     if (!isAuthenticated) {
@@ -76,15 +77,28 @@ function CurriculumDetail() {
     <div className="min-h-screen bg-gradient-to-br from-primary-950 via-primary-900 to-primary-800">
       <AppHeader />
 
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 py-8">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 py-8 pb-28 lg:pb-8">
 
-        {/* Back button */}
-        <button
-          onClick={() => navigate(backPath)}
-          className="text-primary-300 hover:text-white transition-colors font-body text-sm mb-6 block"
-        >
-          ← Back
-        </button>
+        <div className="space-y-4 mb-6">
+          {/* Top progress bar — mobile prominent, desktop subtle */}
+          <div className="space-y-1">
+            <div className="flex items-center justify-between">
+              <button
+                onClick={() => navigate(backPath)}
+                className="text-primary-300 hover:text-white transition-colors font-body text-sm"
+              >
+                ← Back
+              </button>
+              <p className="text-primary-400 font-body text-xs">{completedCount} of {curriculum.modules.length} modules · {progress}%</p>
+            </div>
+            <div className="w-full bg-primary-800 rounded-full h-1">
+              <div
+                className="bg-accent-500 h-1 rounded-full transition-all duration-300"
+                style={{ width: `${progress}%` }}
+              />
+            </div>
+          </div>
+        </div>
 
         {/* Desktop layout: sidebar + main */}
         <div className="flex gap-6 items-start">
@@ -173,7 +187,7 @@ function CurriculumDetail() {
             </div>
 
             {/* Stats row */}
-            <div className="grid grid-cols-3 gap-3">
+            <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
               <div className="bg-white/5 border border-primary-700 rounded-xl p-4 text-center">
                 <p className="text-2xl font-heading font-bold text-white">{curriculum.modules.length}</p>
                 <p className="text-primary-400 font-body text-xs mt-1">modules</p>
@@ -182,7 +196,7 @@ function CurriculumDetail() {
                 <p className="text-2xl font-heading font-bold text-white">{curriculum.duration}</p>
                 <p className="text-primary-400 font-body text-xs mt-1">duration</p>
               </div>
-              <div className="bg-white/5 border border-primary-700 rounded-xl p-4 text-center">
+              <div className="col-span-2 sm:col-span-1 bg-white/5 border border-primary-700 rounded-xl p-4 text-center">
                 <p className="text-2xl font-heading font-bold text-accent-400">{progress}%</p>
                 <p className="text-primary-400 font-body text-xs mt-1">complete</p>
               </div>
@@ -223,47 +237,79 @@ function CurriculumDetail() {
 
             {/* Mobile module list — only shows on small screens */}
             <div className="lg:hidden space-y-2">
-              <p className="text-primary-300 font-body text-xs uppercase tracking-wide">All modules</p>
               {curriculum.modules.map((module, index) => {
                 const isModuleCompleted = module.completed;
                 const isCurrentModule = index === currentModuleIndex && !isCompleted;
+                const isExpanded = expandedMobileModule === index;
                 return (
-                  <button
+                  <div
                     key={index}
-                    onClick={() => handleModuleClick(index)}
-                    className={`w-full flex items-center gap-3 p-4 rounded-xl border text-left transition-colors ${
+                    className={`rounded-xl border overflow-hidden transition-all duration-200 ${
                       isCurrentModule
                         ? 'border-accent-500 bg-accent-500/5'
                         : isModuleCompleted
-                        ? 'border-primary-700 bg-white/5 opacity-70'
+                        ? 'border-primary-700/50 bg-white/5'
                         : 'border-primary-700 bg-white/5'
                     }`}
                   >
-                    <div className={`flex-shrink-0 w-6 h-6 rounded-full flex items-center justify-center ${
-                      isModuleCompleted
-                        ? 'bg-accent-500'
-                        : isCurrentModule
-                        ? 'border border-accent-500'
-                        : 'border border-primary-600'
-                    }`}>
-                      {isModuleCompleted ? (
-                        <span className="text-white text-xs">✓</span>
-                      ) : (
-                        <span className={`text-xs ${isCurrentModule ? 'text-accent-400' : 'text-primary-500'}`}>
-                          {index + 1}
-                        </span>
-                      )}
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <p className={`font-body text-sm ${isCurrentModule ? 'text-white font-semibold' : 'text-primary-200'}`}>
-                        {module.title}
-                      </p>
-                      <p className="text-primary-400 font-body text-xs">{module.estimatedTime}</p>
-                    </div>
-                    {isModuleCompleted && (
-                      <span className="text-accent-400 font-body text-xs flex-shrink-0">Done</span>
+                    <button
+                      onClick={() => setExpandedMobileModule(isExpanded ? null : index)}
+                      className="w-full flex items-center gap-3 p-4 text-left"
+                    >
+                      <div className={`flex-shrink-0 w-6 h-6 rounded-full flex items-center justify-center ${
+                        isModuleCompleted
+                          ? 'bg-accent-500'
+                          : isCurrentModule
+                          ? 'border border-accent-500'
+                          : 'border border-primary-600'
+                      }`}>
+                        {isModuleCompleted ? (
+                          <span className="text-white text-xs">✓</span>
+                        ) : (
+                          <span className={`text-xs ${isCurrentModule ? 'text-accent-400' : 'text-primary-500'}`}>
+                            {index + 1}
+                          </span>
+                        )}
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <p className={`font-body text-sm font-semibold ${
+                          isModuleCompleted ? 'text-primary-400' : isCurrentModule ? 'text-white' : 'text-primary-200'
+                        }`}>
+                          {module.title}
+                        </p>
+                        <p className="text-primary-500 font-body text-xs">⏱ {module.estimatedTime}</p>
+                      </div>
+                      <div className="flex items-center gap-2 flex-shrink-0">
+                        {isModuleCompleted && (
+                          <span className="text-accent-400 font-body text-xs">Done</span>
+                        )}
+                        {isCurrentModule && !isModuleCompleted && (
+                          <span className="px-2 py-0.5 bg-accent-500/20 text-accent-400 text-xs rounded-full font-body">
+                            {completedCount === 0 ? 'Start' : 'Next'}
+                          </span>
+                        )}
+                        <span className="text-primary-500 text-xs">{isExpanded ? '▾' : '▸'}</span>
+                      </div>
+                    </button>
+
+                    {isExpanded && (
+                      <div className="px-4 pb-4 space-y-3 border-t border-primary-700/50 pt-3">
+                        {module.description && (
+                          <p className="text-primary-300 font-body text-sm leading-relaxed">{module.description}</p>
+                        )}
+                        <button
+                          onClick={() => handleModuleClick(index)}
+                          className={`w-full px-4 py-2 font-semibold rounded-lg transition-colors font-body text-sm ${
+                            isModuleCompleted
+                              ? 'bg-white/10 text-primary-200 hover:bg-white/20'
+                              : 'bg-accent-500 text-white hover:bg-accent-600'
+                          }`}
+                        >
+                          {isModuleCompleted ? 'Review module' : isCurrentModule ? (completedCount === 0 ? 'Start →' : 'Continue →') : 'Go to module →'}
+                        </button>
+                      </div>
                     )}
-                  </button>
+                  </div>
                 );
               })}
             </div>
@@ -356,6 +402,18 @@ function CurriculumDetail() {
           </main>
         </div>
       </div>
+
+      {/* Sticky bottom CTA — mobile only */}
+      {!isCompleted && (
+        <div className="lg:hidden fixed bottom-0 left-0 right-0 p-4 bg-primary-950/95 backdrop-blur-sm border-t border-primary-700 z-40">
+          <button
+            onClick={handleContinue}
+            className="w-full px-6 py-4 bg-accent-500 text-white font-semibold rounded-lg hover:bg-accent-600 transition-all font-body text-lg"
+          >
+            {completedCount === 0 ? 'Start Learning →' : `Continue → Module ${currentModuleIndex + 1}`}
+          </button>
+        </div>
+      )}
     </div>
   );
 }
