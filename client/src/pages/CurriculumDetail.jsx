@@ -269,61 +269,86 @@ function CurriculumDetail() {
             </div>
 
             {/* Desktop full module list below sidebar */}
-            <div className="hidden lg:block space-y-2">
+            <div className="hidden lg:block space-y-3">
               <p className="text-primary-300 font-body text-xs uppercase tracking-wide">All modules</p>
               {curriculum.modules.map((module, index) => {
                 const isModuleCompleted = module.completed;
                 const isCurrentModule = index === currentModuleIndex && !isCompleted;
                 return (
-                  <button
+                  <div
                     key={index}
                     onClick={() => handleModuleClick(index)}
-                    className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl border text-left transition-colors hover:border-accent-500/50 ${
+                    className={`w-full p-5 rounded-xl border text-left transition-all duration-200 cursor-pointer hover:border-accent-500/50 ${
                       isCurrentModule
                         ? 'border-accent-500 bg-accent-500/5'
                         : isModuleCompleted
-                        ? 'border-primary-700/50 bg-white/5'
+                        ? 'border-primary-700/50 bg-white/5 opacity-75'
                         : 'border-primary-700 bg-white/5'
                     }`}
                   >
-                    <div className={`flex-shrink-0 w-6 h-6 rounded-full flex items-center justify-center ${
-                      isModuleCompleted
-                        ? 'bg-accent-500'
-                        : isCurrentModule
-                        ? 'border border-accent-500'
-                        : 'border border-primary-600'
-                    }`}>
-                      {isModuleCompleted ? (
-                        <span className="text-white text-xs">✓</span>
-                      ) : (
-                        <span className={`text-xs ${isCurrentModule ? 'text-accent-400' : 'text-primary-500'}`}>
-                          {index + 1}
-                        </span>
-                      )}
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <p className={`font-body text-sm ${
+                    <div className="flex items-start gap-4">
+                      <div className={`flex-shrink-0 w-7 h-7 rounded-full flex items-center justify-center mt-0.5 ${
                         isModuleCompleted
-                          ? 'text-primary-400'
+                          ? 'bg-accent-500'
                           : isCurrentModule
-                          ? 'text-white font-semibold'
-                          : 'text-primary-200'
+                          ? 'border border-accent-500'
+                          : 'border border-primary-600'
                       }`}>
-                        {module.title}
-                      </p>
-                      <p className="text-primary-500 font-body text-xs">{module.estimatedTime}</p>
-                    </div>
-                    <div className="flex items-center gap-3 flex-shrink-0">
-                      {isModuleCompleted && (
-                        <span className="text-accent-400 font-body text-xs">Done</span>
-                      )}
+                        {isModuleCompleted ? (
+                          <span className="text-white text-xs">✓</span>
+                        ) : (
+                          <span className={`text-xs font-semibold ${isCurrentModule ? 'text-accent-400' : 'text-primary-500'}`}>
+                            {index + 1}
+                          </span>
+                        )}
+                      </div>
+                      <div className="flex-1 min-w-0 space-y-1">
+                        <div className="flex items-center gap-3 flex-wrap">
+                          <p className={`font-body font-semibold ${
+                            isModuleCompleted
+                              ? 'text-primary-400'
+                              : isCurrentModule
+                              ? 'text-white'
+                              : 'text-primary-100'
+                          }`}>
+                            {module.title}
+                          </p>
+                          {isModuleCompleted && (
+                            <span className="px-2 py-0.5 bg-accent-500/20 text-accent-400 text-xs rounded-full font-body">Done</span>
+                          )}
+                          {isCurrentModule && (
+                            <span className="px-2 py-0.5 bg-accent-500/20 text-accent-400 text-xs rounded-full font-body">
+                              {completedCount === 0 ? 'Start here' : 'Up next'}
+                            </span>
+                          )}
+                        </div>
+                        {module.description && (
+                          <p className={`font-body text-sm leading-relaxed ${
+                            isModuleCompleted ? 'text-primary-500' : 'text-primary-300'
+                          }`}>
+                            {module.description}
+                          </p>
+                        )}
+                        <p className="text-primary-500 font-body text-xs">⏱ {module.estimatedTime}</p>
+                      </div>
                       {isCurrentModule && (
-                        <span className="px-2 py-0.5 bg-accent-500/20 text-accent-400 text-xs rounded-full font-body">
-                          {completedCount === 0 ? 'Start here' : 'Up next'}
-                        </span>
+                        <button
+                          onClick={(e) => { e.stopPropagation(); handleModuleClick(index); }}
+                          className="flex-shrink-0 px-4 py-2 bg-accent-500 text-white font-semibold rounded-lg hover:bg-accent-600 transition-colors font-body text-sm"
+                        >
+                          {completedCount === 0 ? 'Start →' : 'Continue →'}
+                        </button>
+                      )}
+                      {isModuleCompleted && (
+                        <button
+                          onClick={(e) => { e.stopPropagation(); handleModuleClick(index); }}
+                          className="flex-shrink-0 px-4 py-2 bg-white/10 text-primary-300 font-semibold rounded-lg hover:bg-white/20 transition-colors font-body text-sm"
+                        >
+                          Review
+                        </button>
                       )}
                     </div>
-                  </button>
+                  </div>
                 );
               })}
             </div>
