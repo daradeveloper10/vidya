@@ -90,4 +90,74 @@ router.patch('/:id/complete', isAuthenticated, curriculumController.completeCurr
 // Delete curriculum by ID
 router.delete('/:id', isAuthenticated, curriculumController.deleteCurriculum);
 
+router.post('/:curriculumId/module-outcomes', isAuthenticated, async (req, res) => {
+  try {
+    const { curriculumId } = req.params;
+    const { moduleIndex } = req.body;
+    const userId = req.user.id;
+    const Curriculum = require('../models/Curriculum');
+    const Anthropic = require('@anthropic-ai/sdk');
+    const mongoose = require('mongoose');
+
+    if (!mongoose.Types.ObjectId.isValid(curriculumId)) {
+      return res.status(400).json({ error: 'Invalid ID' });
+    }
+
+    if (moduleIndex === undefined || moduleIndex === null) {
+      return res.status(400).json({ error: 'moduleIndex is required' });
+    }
+
+    const curriculum = await Curriculum.findOne({ _id: curriculumId, userId });
+    if (!curriculum) return res.status(404).json({ error: 'Curriculum not found' });
+
+    const module = curriculum.modules[moduleIndex];
+    if (!module) return res.status(404).json({ error: 'Module not found' });
+
+    // Return cached outcomes if they exist
+    if (module.outcomes && module.outcomes.length > 0) {
+      return res.json({ outcomes: module.outcomes, cached: true });
+    }
+
+    // Generate outcomes with Claude
+    const anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
+
+    const message = await anthropic.messages.create({
+      model: 'claude-sonnet-4-20250514',
+      max_tokens: 300,
+      messages: [{
+        role: 'user',
+        content: `Generate exactly 4 concise learning outcomes for this module.
+
+Course: <course_topic>${curriculum.topic}</course_topic>
+Module: <module_title>${module.title}</module_title>
+Description: <module_description>${module.description}</module_description>
+${module.content ? `Content preview: <content>${module.content.slice(0, 500)}</content>` : ''}
+
+Each outcome must:
+- Start with an action verb (Understand, Apply, Identify, Explain, Build, Analyse, Recognise, Evaluate)
+- Be specific to this module
+- Be one sentence maximum
+
+Respond ONLY with a JSON array of exactly 4 strings, no markdown fences, no explanation:
+["outcome 1", "outcome 2", "outcome 3", "outcome 4"]`
+      }]
+    });
+
+    let text = message.content[0].text.trim();
+    text = text.replace(/```json\n?/g, '').replace(/```\n?/g, '').trim();
+    const outcomes = JSON.parse(text);
+
+    // Save outcomes to MongoDB efficiently — only update this module's outcomes field
+    await Curriculum.updateOne(
+      { _id: curriculumId },
+      { $set: { [`modules.${moduleIndex}.outcomes`]: outcomes } }
+    );
+
+    res.json({ outcomes });
+  } catch (err) {
+    console.error('[module-outcomes] Error:', err.message);
+    res.status(500).json({ error: 'Failed to generate outcomes' });
+  }
+});
+
 module.exports = router;

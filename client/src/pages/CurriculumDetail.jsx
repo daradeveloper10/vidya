@@ -11,6 +11,9 @@ function CurriculumDetail() {
   const { isAuthenticated } = useAuth();
   const [curriculum, setCurriculum] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [selectedModuleIndex, setSelectedModuleIndex] = useState(0);
+  const [moduleOutcomes, setModuleOutcomes] = useState({});
+  const [loadingOutcomes, setLoadingOutcomes] = useState({});
   const [expandedMobileModule, setExpandedMobileModule] = useState(null);
 
   useEffect(() => {
@@ -21,10 +24,31 @@ function CurriculumDetail() {
     fetchCurriculum();
   }, [curriculumId, isAuthenticated]);
 
+  useEffect(() => {
+    if (!curriculum) return;
+    fetchOutcomes(selectedModuleIndex);
+  }, [selectedModuleIndex, curriculum]);
+
   const fetchCurriculum = async () => {
     try {
       const response = await api.get(`/api/curriculum/${curriculumId}`);
-      setCurriculum(response.data);
+      const data = response.data;
+      setCurriculum(data);
+      const nextIndex = data.modules.findIndex(m => !m.completed);
+      const startIndex = nextIndex >= 0 ? nextIndex : 0;
+      setSelectedModuleIndex(startIndex);
+      setExpandedMobileModule(startIndex);
+
+      // Pre-populate outcomes from cached data
+      const cachedOutcomes = {};
+      data.modules.forEach((mod, i) => {
+        if (mod.outcomes && mod.outcomes.length > 0) {
+          cachedOutcomes[i] = mod.outcomes;
+        }
+      });
+      if (Object.keys(cachedOutcomes).length > 0) {
+        setModuleOutcomes(cachedOutcomes);
+      }
     } catch (err) {
       console.error('Error fetching curriculum:', err);
       navigate('/dashboard');
@@ -33,9 +57,22 @@ function CurriculumDetail() {
     }
   };
 
-  const handleContinue = () => {
-    const nextIndex = curriculum.currentModuleIndex || 0;
-    navigate(`/module/${curriculumId}/${nextIndex}`);
+  const fetchOutcomes = async (moduleIndex) => {
+    if (moduleOutcomes[moduleIndex]) return;
+    try {
+      setLoadingOutcomes(prev => ({ ...prev, [moduleIndex]: true }));
+      const response = await api.post(`/api/curriculum/${curriculumId}/module-outcomes`, { moduleIndex });
+      setModuleOutcomes(prev => ({ ...prev, [moduleIndex]: response.data.outcomes }));
+    } catch (err) {
+      console.error('Error fetching outcomes:', err);
+    } finally {
+      setLoadingOutcomes(prev => ({ ...prev, [moduleIndex]: false }));
+    }
+  };
+
+  const handleModuleSelect = (index) => {
+    setSelectedModuleIndex(index);
+    setExpandedMobileModule(index);
   };
 
   const handleModuleClick = (moduleIndex) => {
@@ -46,12 +83,6 @@ function CurriculumDetail() {
     if (!curriculum?.modules?.length) return 0;
     const completed = curriculum.modules.filter(m => m.completed).length;
     return Math.round((completed / curriculum.modules.length) * 100);
-  };
-
-  const getNextIncompleteModule = () => {
-    if (!curriculum?.modules) return 0;
-    const idx = curriculum.modules.findIndex(m => !m.completed);
-    return idx >= 0 ? idx : 0;
   };
 
   if (loading) {
@@ -66,12 +97,13 @@ function CurriculumDetail() {
 
   const progress = calculateProgress();
   const completedCount = curriculum.modules.filter(m => m.completed).length;
-  const currentModuleIndex = getNextIncompleteModule();
-  const currentModule = curriculum.modules[currentModuleIndex];
   const isCompleted = curriculum.completed;
-  const backPath = location.state?.fromPath
-    ? `/my-path/${location.state.fromPath}`
-    : '/dashboard';
+  const selectedModule = curriculum.modules[selectedModuleIndex];
+  const isSelectedCompleted = selectedModule?.completed;
+  const isSelectedCurrent = !isSelectedCompleted && selectedModuleIndex === curriculum.modules.findIndex(m => !m.completed);
+  const backPath = location.state?.fromPath ? `/my-path/${location.state.fromPath}` : '/dashboard';
+  const outcomes = moduleOutcomes[selectedModuleIndex] || [];
+  const isLoadingOutcomes = loadingOutcomes[selectedModuleIndex];
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-primary-950 via-primary-900 to-primary-800">
@@ -79,35 +111,60 @@ function CurriculumDetail() {
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 py-8 pb-28 lg:pb-8">
 
-        <div className="space-y-4 mb-6">
-          {/* Top progress bar — mobile prominent, desktop subtle */}
-          <div className="space-y-1">
-            <div className="flex items-center justify-between">
-              <button
-                onClick={() => navigate(backPath)}
-                className="text-primary-300 hover:text-white transition-colors font-body text-sm"
-              >
-                ← Back
-              </button>
-              <p className="text-primary-400 font-body text-xs">{completedCount} of {curriculum.modules.length} modules · {progress}%</p>
-            </div>
-            <div className="w-full bg-primary-800 rounded-full h-1">
-              <div
-                className="bg-accent-500 h-1 rounded-full transition-all duration-300"
-                style={{ width: `${progress}%` }}
-              />
-            </div>
+        {/* Top progress bar + back */}
+        <div className="space-y-1 mb-6">
+          <div className="flex items-center justify-between">
+            <button
+              onClick={() => navigate(backPath)}
+              className="text-primary-300 hover:text-white transition-colors font-body text-sm"
+            >
+              ← Back
+            </button>
+            <p className="text-primary-400 font-body text-xs">
+              {completedCount} of {curriculum.modules.length} modules · {progress}%
+            </p>
+          </div>
+          <div className="w-full bg-primary-800 rounded-full h-1">
+            <div
+              className="bg-accent-500 h-1 rounded-full transition-all duration-300"
+              style={{ width: `${progress}%` }}
+            />
           </div>
         </div>
 
-        {/* Desktop layout: sidebar + main */}
+        {/* Course header */}
+        <div className="mb-6 space-y-1">
+          <p className="text-accent-400 font-body text-xs uppercase tracking-wide">{curriculum.duration} course</p>
+          <h1 className="text-3xl sm:text-4xl font-heading font-bold text-white">
+            {curriculum.displayTitle || curriculum.topic}
+          </h1>
+          {curriculum.subtitle && (
+            <p className="text-primary-200 font-body text-lg italic">{curriculum.subtitle}</p>
+          )}
+        </div>
+
+        {/* Stats */}
+        <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 mb-6">
+          <div className="bg-white/5 border border-primary-700 rounded-xl p-4 text-center">
+            <p className="text-2xl font-heading font-bold text-white">{curriculum.modules.length}</p>
+            <p className="text-primary-400 font-body text-xs mt-1">modules</p>
+          </div>
+          <div className="bg-white/5 border border-primary-700 rounded-xl p-4 text-center">
+            <p className="text-2xl font-heading font-bold text-white">{curriculum.duration}</p>
+            <p className="text-primary-400 font-body text-xs mt-1">duration</p>
+          </div>
+          <div className="col-span-2 sm:col-span-1 bg-white/5 border border-primary-700 rounded-xl p-4 text-center">
+            <p className="text-2xl font-heading font-bold text-accent-400">{progress}%</p>
+            <p className="text-primary-400 font-body text-xs mt-1">complete</p>
+          </div>
+        </div>
+
+        {/* Two column layout */}
         <div className="flex gap-6 items-start">
 
-          {/* Sidebar — hidden on mobile, visible on lg+ */}
+          {/* Sidebar */}
           <aside className="hidden lg:block w-64 flex-shrink-0 sticky top-6">
             <div className="bg-white/5 border border-primary-700 rounded-xl overflow-hidden">
-
-              {/* Sidebar header */}
               <div className="px-4 py-4 border-b border-primary-700 space-y-2">
                 <p className="text-primary-400 font-body text-xs uppercase tracking-wide">Course content</p>
                 <p className="text-white font-body text-sm font-semibold">
@@ -120,42 +177,36 @@ function CurriculumDetail() {
                   />
                 </div>
               </div>
-
-              {/* Module list */}
               <div className="py-2">
                 {curriculum.modules.map((module, index) => {
                   const isModuleCompleted = module.completed;
-                  const isCurrentModule = index === currentModuleIndex && !isCompleted;
+                  const isActive = index === selectedModuleIndex;
                   return (
                     <button
                       key={index}
-                      onClick={() => handleModuleClick(index)}
+                      onClick={() => handleModuleSelect(index)}
                       className={`w-full flex items-start gap-3 px-4 py-3 text-left transition-colors hover:bg-white/5 ${
-                        isCurrentModule ? 'border-l-2 border-accent-500 bg-accent-500/5 pl-3.5' : ''
+                        isActive ? 'border-l-2 border-accent-500 bg-accent-500/5 pl-3.5' : ''
                       }`}
                     >
                       <div className={`flex-shrink-0 w-5 h-5 rounded-full flex items-center justify-center mt-0.5 ${
                         isModuleCompleted
                           ? 'bg-accent-500'
-                          : isCurrentModule
+                          : isActive
                           ? 'border border-accent-500'
                           : 'border border-primary-600'
                       }`}>
                         {isModuleCompleted ? (
                           <span className="text-white text-xs">✓</span>
                         ) : (
-                          <span className={`text-xs ${isCurrentModule ? 'text-accent-400' : 'text-primary-500'}`}>
+                          <span className={`text-xs ${isActive ? 'text-accent-400' : 'text-primary-500'}`}>
                             {index + 1}
                           </span>
                         )}
                       </div>
                       <div className="flex-1 min-w-0">
                         <p className={`font-body text-xs leading-snug ${
-                          isModuleCompleted
-                            ? 'text-primary-400'
-                            : isCurrentModule
-                            ? 'text-white font-semibold'
-                            : 'text-primary-300'
+                          isModuleCompleted ? 'text-primary-400' : isActive ? 'text-white font-semibold' : 'text-primary-300'
                         }`}>
                           {module.title}
                         </p>
@@ -168,79 +219,109 @@ function CurriculumDetail() {
             </div>
           </aside>
 
-          {/* Main content */}
-          <main className="flex-1 min-w-0 space-y-6">
+          {/* Main — selected module detail */}
+          <main className="flex-1 min-w-0">
 
-            {/* Course header */}
-            <div className="space-y-3">
-              <div className="space-y-1">
-                <p className="text-accent-400 font-body text-xs uppercase tracking-wide">
-                  {curriculum.duration} course
-                </p>
-                <h1 className="text-3xl sm:text-4xl font-heading font-bold text-white">
-                  {curriculum.displayTitle || curriculum.topic}
-                </h1>
-                {curriculum.subtitle && (
-                  <p className="text-primary-200 font-body text-lg italic">{curriculum.subtitle}</p>
-                )}
-              </div>
-            </div>
+            {/* Desktop module detail */}
+            <div className="hidden lg:block">
+              {selectedModule && (
+                <div className="space-y-6">
 
-            {/* Stats row */}
-            <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
-              <div className="bg-white/5 border border-primary-700 rounded-xl p-4 text-center">
-                <p className="text-2xl font-heading font-bold text-white">{curriculum.modules.length}</p>
-                <p className="text-primary-400 font-body text-xs mt-1">modules</p>
-              </div>
-              <div className="bg-white/5 border border-primary-700 rounded-xl p-4 text-center">
-                <p className="text-2xl font-heading font-bold text-white">{curriculum.duration}</p>
-                <p className="text-primary-400 font-body text-xs mt-1">duration</p>
-              </div>
-              <div className="col-span-2 sm:col-span-1 bg-white/5 border border-primary-700 rounded-xl p-4 text-center">
-                <p className="text-2xl font-heading font-bold text-accent-400">{progress}%</p>
-                <p className="text-primary-400 font-body text-xs mt-1">complete</p>
-              </div>
-            </div>
-
-            {/* Continue / completed banner */}
-            {!isCompleted && currentModule && (
-              <div className="bg-accent-500/10 border border-accent-500/30 rounded-xl p-5">
-                <div className="flex items-center justify-between gap-4 flex-wrap">
-                  <div className="space-y-1">
-                    <p className="text-accent-400 font-body text-xs uppercase tracking-wide">
-                      {completedCount === 0 ? 'Start here' : 'Up next'}
-                    </p>
-                    <p className="text-white font-heading font-semibold text-lg">{currentModule.title}</p>
-                    <p className="text-primary-300 font-body text-sm">
-                      Module {currentModuleIndex + 1} of {curriculum.modules.length} · {currentModule.estimatedTime}
-                    </p>
+                  {/* Module header */}
+                  <div className={`p-6 rounded-xl border ${
+                    isSelectedCompleted
+                      ? 'border-accent-500/30 bg-accent-500/5'
+                      : isSelectedCurrent
+                      ? 'border-accent-500 bg-accent-500/5'
+                      : 'border-primary-700 bg-white/5'
+                  }`}>
+                    <div className="flex items-start justify-between gap-4">
+                      <div className="space-y-2 flex-1">
+                        <div className="flex items-center gap-2 flex-wrap">
+                          <p className="text-primary-400 font-body text-xs uppercase tracking-wide">
+                            Module {selectedModuleIndex + 1} of {curriculum.modules.length}
+                          </p>
+                          {isSelectedCompleted && (
+                            <span className="px-2 py-0.5 bg-accent-500/20 text-accent-400 text-xs rounded-full font-body">Complete</span>
+                          )}
+                          {isSelectedCurrent && !isSelectedCompleted && (
+                            <span className="px-2 py-0.5 bg-accent-500/20 text-accent-400 text-xs rounded-full font-body">
+                              {completedCount === 0 ? 'Start here' : 'Up next'}
+                            </span>
+                          )}
+                        </div>
+                        <h2 className="text-2xl font-heading font-bold text-white">{selectedModule.title}</h2>
+                        <p className="text-primary-200 font-body">{selectedModule.description}</p>
+                        <p className="text-primary-400 font-body text-sm">⏱ {selectedModule.estimatedTime}</p>
+                      </div>
+                      <button
+                        onClick={() => handleModuleClick(selectedModuleIndex)}
+                        className={`flex-shrink-0 px-6 py-3 font-semibold rounded-lg transition-all font-body ${
+                          isSelectedCompleted
+                            ? 'bg-white/10 text-primary-200 hover:bg-white/20'
+                            : 'bg-accent-500 text-white hover:bg-accent-600'
+                        }`}
+                      >
+                        {isSelectedCompleted ? 'Review →' : completedCount === 0 && selectedModuleIndex === 0 ? 'Start →' : 'Go to module →'}
+                      </button>
+                    </div>
                   </div>
-                  <button
-                    onClick={handleContinue}
-                    className="px-6 py-3 bg-accent-500 text-white font-semibold rounded-lg hover:bg-accent-600 transition-all font-body flex-shrink-0"
-                  >
-                    {completedCount === 0 ? 'Start Learning →' : 'Continue →'}
-                  </button>
-                </div>
-              </div>
-            )}
 
-            {isCompleted && (
-              <div className="bg-green-500/10 border border-green-500/30 rounded-xl p-5 flex items-center gap-4">
-                <span className="text-3xl">🏆</span>
-                <div>
-                  <p className="text-green-400 font-heading font-bold text-lg">Course Complete!</p>
-                  <p className="text-primary-200 font-body text-sm">You've completed all modules in this course.</p>
-                </div>
-              </div>
-            )}
+                  {/* Learning outcomes */}
+                  <div className="bg-white/5 border border-primary-700 rounded-xl p-6 space-y-4">
+                    <h3 className="text-lg font-heading font-semibold text-white">
+                      By the end of this module you will...
+                    </h3>
+                    {isLoadingOutcomes ? (
+                      <div className="space-y-2">
+                        {[1,2,3,4].map(i => (
+                          <div key={i} className="flex items-start gap-3 animate-pulse">
+                            <div className="w-4 h-4 rounded-full bg-white/10 flex-shrink-0 mt-1"></div>
+                            <div className="h-4 bg-white/10 rounded flex-1"></div>
+                          </div>
+                        ))}
+                      </div>
+                    ) : outcomes.length > 0 ? (
+                      <ul className="space-y-3">
+                        {outcomes.map((outcome, i) => (
+                          <li key={i} className="flex items-start gap-3">
+                            <div className="flex-shrink-0 w-5 h-5 rounded-full bg-accent-500/20 border border-accent-500/40 flex items-center justify-center mt-0.5">
+                              <span className="text-accent-400 text-xs font-semibold">{i + 1}</span>
+                            </div>
+                            <p className="text-primary-200 font-body text-sm leading-relaxed">{outcome}</p>
+                          </li>
+                        ))}
+                      </ul>
+                    ) : (
+                      <p className="text-primary-400 font-body text-sm">Loading outcomes...</p>
+                    )}
+                  </div>
 
-            {/* Mobile module list — only shows on small screens */}
+                  {/* Score if completed */}
+                  {isSelectedCompleted && selectedModule.score !== undefined && (
+                    <div className="bg-white/5 border border-primary-700 rounded-xl p-5 flex items-center gap-4">
+                      <div className="text-3xl">🏆</div>
+                      <div>
+                        <p className="text-white font-body font-semibold">Module Complete</p>
+                        <p className="text-primary-300 font-body text-sm">
+                          You scored <span className="text-accent-400 font-semibold">{selectedModule.score}%</span> on the quiz
+                        </p>
+                      </div>
+                    </div>
+                  )}
+
+                </div>
+              )}
+            </div>
+
+            {/* Mobile module list */}
             <div className="lg:hidden space-y-2">
               {curriculum.modules.map((module, index) => {
                 const isModuleCompleted = module.completed;
-                const isCurrentModule = index === currentModuleIndex && !isCompleted;
+                const isCurrentModule = index === curriculum.modules.findIndex(m => !m.completed) && !isCompleted;
                 const isExpanded = expandedMobileModule === index;
+                const mobileOutcomes = moduleOutcomes[index] || [];
+                const isMobileLoadingOutcomes = loadingOutcomes[index];
                 return (
                   <div
                     key={index}
@@ -253,7 +334,11 @@ function CurriculumDetail() {
                     }`}
                   >
                     <button
-                      onClick={() => setExpandedMobileModule(isExpanded ? null : index)}
+                      onClick={() => {
+                        const newExpanded = isExpanded ? null : index;
+                        setExpandedMobileModule(newExpanded);
+                        if (newExpanded !== null) fetchOutcomes(index);
+                      }}
                       className="w-full flex items-center gap-3 p-4 text-left"
                     >
                       <div className={`flex-shrink-0 w-6 h-6 rounded-full flex items-center justify-center ${
@@ -280,9 +365,7 @@ function CurriculumDetail() {
                         <p className="text-primary-500 font-body text-xs">⏱ {module.estimatedTime}</p>
                       </div>
                       <div className="flex items-center gap-2 flex-shrink-0">
-                        {isModuleCompleted && (
-                          <span className="text-accent-400 font-body text-xs">Done</span>
-                        )}
+                        {isModuleCompleted && <span className="text-accent-400 font-body text-xs">Done</span>}
                         {isCurrentModule && !isModuleCompleted && (
                           <span className="px-2 py-0.5 bg-accent-500/20 text-accent-400 text-xs rounded-full font-body">
                             {completedCount === 0 ? 'Start' : 'Next'}
@@ -293,107 +376,49 @@ function CurriculumDetail() {
                     </button>
 
                     {isExpanded && (
-                      <div className="px-4 pb-4 space-y-3 border-t border-primary-700/50 pt-3">
+                      <div className="px-4 pb-4 space-y-4 border-t border-primary-700/50 pt-4">
                         {module.description && (
                           <p className="text-primary-300 font-body text-sm leading-relaxed">{module.description}</p>
                         )}
+                        {isMobileLoadingOutcomes ? (
+                          <div className="space-y-2">
+                            {[1,2,3,4].map(i => (
+                              <div key={i} className="flex items-start gap-2 animate-pulse">
+                                <div className="w-4 h-4 rounded-full bg-white/10 flex-shrink-0 mt-1"></div>
+                                <div className="h-3 bg-white/10 rounded flex-1"></div>
+                              </div>
+                            ))}
+                          </div>
+                        ) : mobileOutcomes.length > 0 && (
+                          <div className="space-y-2">
+                            <p className="text-primary-400 font-body text-xs uppercase tracking-wide">You will learn to</p>
+                            <ul className="space-y-2">
+                              {mobileOutcomes.map((outcome, i) => (
+                                <li key={i} className="flex items-start gap-2">
+                                  <span className="text-accent-400 text-xs mt-1 flex-shrink-0">→</span>
+                                  <p className="text-primary-300 font-body text-sm">{outcome}</p>
+                                </li>
+                              ))}
+                            </ul>
+                          </div>
+                        )}
+                        {isModuleCompleted && module.score !== undefined && (
+                          <p className="text-primary-400 font-body text-xs">
+                            Quiz score: <span className="text-accent-400 font-semibold">{module.score}%</span>
+                          </p>
+                        )}
                         <button
                           onClick={() => handleModuleClick(index)}
-                          className={`w-full px-4 py-2 font-semibold rounded-lg transition-colors font-body text-sm ${
+                          className={`w-full px-4 py-3 font-semibold rounded-lg transition-colors font-body text-sm ${
                             isModuleCompleted
                               ? 'bg-white/10 text-primary-200 hover:bg-white/20'
                               : 'bg-accent-500 text-white hover:bg-accent-600'
                           }`}
                         >
-                          {isModuleCompleted ? 'Review module' : isCurrentModule ? (completedCount === 0 ? 'Start →' : 'Continue →') : 'Go to module →'}
+                          {isModuleCompleted ? 'Review module →' : isCurrentModule ? (completedCount === 0 ? 'Start →' : 'Continue →') : 'Go to module →'}
                         </button>
                       </div>
                     )}
-                  </div>
-                );
-              })}
-            </div>
-
-            {/* Desktop full module list below sidebar */}
-            <div className="hidden lg:block space-y-3">
-              <p className="text-primary-300 font-body text-xs uppercase tracking-wide">All modules</p>
-              {curriculum.modules.map((module, index) => {
-                const isModuleCompleted = module.completed;
-                const isCurrentModule = index === currentModuleIndex && !isCompleted;
-                return (
-                  <div
-                    key={index}
-                    onClick={() => handleModuleClick(index)}
-                    className={`w-full p-5 rounded-xl border text-left transition-all duration-200 cursor-pointer hover:border-accent-500/50 ${
-                      isCurrentModule
-                        ? 'border-accent-500 bg-accent-500/5'
-                        : isModuleCompleted
-                        ? 'border-primary-700/50 bg-white/5 opacity-75'
-                        : 'border-primary-700 bg-white/5'
-                    }`}
-                  >
-                    <div className="flex items-start gap-4">
-                      <div className={`flex-shrink-0 w-7 h-7 rounded-full flex items-center justify-center mt-0.5 ${
-                        isModuleCompleted
-                          ? 'bg-accent-500'
-                          : isCurrentModule
-                          ? 'border border-accent-500'
-                          : 'border border-primary-600'
-                      }`}>
-                        {isModuleCompleted ? (
-                          <span className="text-white text-xs">✓</span>
-                        ) : (
-                          <span className={`text-xs font-semibold ${isCurrentModule ? 'text-accent-400' : 'text-primary-500'}`}>
-                            {index + 1}
-                          </span>
-                        )}
-                      </div>
-                      <div className="flex-1 min-w-0 space-y-1">
-                        <div className="flex items-center gap-3 flex-wrap">
-                          <p className={`font-body font-semibold ${
-                            isModuleCompleted
-                              ? 'text-primary-400'
-                              : isCurrentModule
-                              ? 'text-white'
-                              : 'text-primary-100'
-                          }`}>
-                            {module.title}
-                          </p>
-                          {isModuleCompleted && (
-                            <span className="px-2 py-0.5 bg-accent-500/20 text-accent-400 text-xs rounded-full font-body">Done</span>
-                          )}
-                          {isCurrentModule && (
-                            <span className="px-2 py-0.5 bg-accent-500/20 text-accent-400 text-xs rounded-full font-body">
-                              {completedCount === 0 ? 'Start here' : 'Up next'}
-                            </span>
-                          )}
-                        </div>
-                        {module.description && (
-                          <p className={`font-body text-sm leading-relaxed ${
-                            isModuleCompleted ? 'text-primary-500' : 'text-primary-300'
-                          }`}>
-                            {module.description}
-                          </p>
-                        )}
-                        <p className="text-primary-500 font-body text-xs">⏱ {module.estimatedTime}</p>
-                      </div>
-                      {isCurrentModule && (
-                        <button
-                          onClick={(e) => { e.stopPropagation(); handleModuleClick(index); }}
-                          className="flex-shrink-0 px-4 py-2 bg-accent-500 text-white font-semibold rounded-lg hover:bg-accent-600 transition-colors font-body text-sm"
-                        >
-                          {completedCount === 0 ? 'Start →' : 'Continue →'}
-                        </button>
-                      )}
-                      {isModuleCompleted && (
-                        <button
-                          onClick={(e) => { e.stopPropagation(); handleModuleClick(index); }}
-                          className="flex-shrink-0 px-4 py-2 bg-white/10 text-primary-300 font-semibold rounded-lg hover:bg-white/20 transition-colors font-body text-sm"
-                        >
-                          Review
-                        </button>
-                      )}
-                    </div>
                   </div>
                 );
               })}
@@ -407,13 +432,14 @@ function CurriculumDetail() {
       {!isCompleted && (
         <div className="lg:hidden fixed bottom-0 left-0 right-0 p-4 bg-primary-950/95 backdrop-blur-sm border-t border-primary-700 z-40">
           <button
-            onClick={handleContinue}
-            className="w-full px-6 py-4 bg-accent-500 text-white font-semibold rounded-lg hover:bg-accent-600 transition-all font-body text-lg"
+            onClick={() => handleModuleClick(curriculum.modules.findIndex(m => !m.completed) >= 0 ? curriculum.modules.findIndex(m => !m.completed) : 0)}
+            className="w-full px-6 py-4 bg-accent-500 text-white font-semibold rounded-lg hover:bg-accent-600 transition-all font-body"
           >
-            {completedCount === 0 ? 'Start Learning →' : `Continue → Module ${currentModuleIndex + 1}`}
+            {completedCount === 0 ? 'Start Learning →' : `Continue → Module ${curriculum.modules.findIndex(m => !m.completed) + 1}`}
           </button>
         </div>
       )}
+
     </div>
   );
 }
