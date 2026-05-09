@@ -195,7 +195,7 @@ function Dashboard() {
 
   const handleItemClick = (item) => {
     if (item.type === 'curriculum') {
-      navigate(`/module/${item.data._id}/${item.data.currentModuleIndex || 0}`);
+      navigate(`/curriculum/${item.data._id}`);
     } else if (item.type === 'userPath') {
       navigate(`/my-path/${item.data._id}`);
     } else if (item.type === 'staticPath') {
@@ -259,7 +259,7 @@ function Dashboard() {
                   </p>
                 </div>
                 <button
-                  onClick={() => navigate(`/module/${inProgressCurriculum._id}/${inProgressCurriculum.currentModuleIndex}`)}
+                  onClick={() => navigate(`/curriculum/${inProgressCurriculum._id}`)}
                   className="px-6 py-3 bg-accent-500 text-white font-semibold rounded-lg hover:bg-accent-600 transition-all font-body flex-shrink-0"
                 >
                   Continue →

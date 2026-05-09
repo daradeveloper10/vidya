@@ -50,10 +50,7 @@ function UserPathDetail() {
     const current = path.curricula[path.currentCurriculumIndex];
     const id = getCurriculumId(current);
     if (id) {
-      const modules = getModules(current);
-      const nextIncomplete = modules.findIndex(m => !m.completed);
-      const moduleIndex = nextIncomplete >= 0 ? nextIncomplete : 0;
-      navigate(`/module/${id}/${moduleIndex}`);
+      navigate(`/curriculum/${id}`, { state: { fromPath: path._id } });
     }
   };
 
@@ -65,10 +62,7 @@ function UserPathDetail() {
   const handleContinueCurriculum = (curriculum) => {
     const id = getCurriculumId(curriculum);
     if (!id) return;
-    const modules = getModules(curriculum);
-    const nextIncomplete = modules.findIndex(m => !m.completed);
-    const moduleIndex = nextIncomplete >= 0 ? nextIncomplete : 0;
-    navigate(`/module/${id}/${moduleIndex}`);
+    navigate(`/curriculum/${id}`, { state: { fromPath: path._id } });
   };
 
   if (loading) {
@@ -200,7 +194,7 @@ function UserPathDetail() {
                       <div className="py-4 text-center space-y-2">
                         <p className="text-primary-400 font-body text-sm">No modules yet.</p>
                         <button
-                          onClick={() => navigate(`/module/${curriculumId}/0`)}
+                          onClick={() => navigate(`/curriculum/${curriculumId}`, { state: { fromPath: path._id } })}
                           className="px-4 py-2 bg-accent-500/20 text-accent-400 rounded-lg hover:bg-accent-500 hover:text-white transition-colors font-body text-sm"
                         >
                           Start curriculum →

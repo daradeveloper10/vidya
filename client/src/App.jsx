@@ -10,6 +10,7 @@ import Complete from './pages/Complete'
 import Passport from './pages/Passport'
 import PathDetail from './pages/PathDetail'
 import UserPathDetail from './pages/UserPathDetail'
+import CurriculumDetail from './pages/CurriculumDetail'
 import NotFound from './pages/NotFound'
 import AuthCallback from './pages/AuthCallback'
 
@@ -29,6 +30,7 @@ function App() {
           <Route path="/passport" element={<Passport />} />
           <Route path="/path/:slug" element={<PathDetail />} />
           <Route path="/my-path/:pathId" element={<UserPathDetail />} />
+          <Route path="/curriculum/:curriculumId" element={<CurriculumDetail />} />
           <Route path="*" element={<NotFound />} />
         </Routes>
       </Router>
