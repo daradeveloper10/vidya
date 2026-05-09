@@ -33,7 +33,7 @@ app.use(helmet({
 
 // Middleware
 app.use(cors({
-  origin: 'https://vidya-six.vercel.app',
+  origin: process.env.CLIENT_URL || 'http://localhost:5173',
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE'],
   allowedHeaders: ['Content-Type', 'Authorization']
@@ -144,12 +144,16 @@ app.get('/health', (req, res) => {
   res.json({ status: 'ok', message: 'Vidya server is running' });
 });
 
-// Error handling middleware - shows full error for debugging
+// Error handling middleware
 app.use((err, req, res, next) => {
   console.error('🔴 Server error:', err.stack);
-  res.status(500).json({ 
-    error: 'Something went wrong!',
-    message: err.message
+  
+  // In production, don't expose error details
+  const isProduction = process.env.NODE_ENV === 'production';
+  
+  res.status(err.status || 500).json({ 
+    error: isProduction ? 'Something went wrong!' : err.message,
+    ...(isProduction ? {} : { stack: err.stack })
   });
 });
 
