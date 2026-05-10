@@ -364,14 +364,16 @@ function CurriculumDetail() {
                         </p>
                         <p className="text-primary-500 font-body text-xs">⏱ {module.estimatedTime}</p>
                       </div>
-                      <div className="flex items-center gap-2 flex-shrink-0">
-                        {isModuleCompleted && <span className="text-accent-400 font-body text-xs">Done</span>}
+                      <div className="flex items-center gap-2 flex-shrink-0 ml-2">
+                        {isModuleCompleted && (
+                          <span className="text-accent-400 font-body text-xs hidden xs:block">Done</span>
+                        )}
                         {isCurrentModule && !isModuleCompleted && (
-                          <span className="px-2 py-0.5 bg-accent-500/20 text-accent-400 text-xs rounded-full font-body">
+                          <span className="px-2 py-0.5 bg-accent-500/20 text-accent-400 text-xs rounded-full font-body whitespace-nowrap">
                             {completedCount === 0 ? 'Start' : 'Next'}
                           </span>
                         )}
-                        <span className="text-primary-500 text-xs">{isExpanded ? '▾' : '▸'}</span>
+                        <span className="text-primary-400 text-sm">{isExpanded ? '▾' : '▸'}</span>
                       </div>
                     </button>
 

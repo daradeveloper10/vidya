@@ -148,7 +148,7 @@ function Home() {
             }}
             className="max-w-3xl mx-auto"
           >
-            <div className="flex gap-3">
+            <div className="flex flex-col sm:flex-row gap-3">
               <input
                 type="text"
                 name="topic"
@@ -157,7 +157,7 @@ function Home() {
               />
               <button
                 type="submit"
-                className="px-8 py-4 bg-accent-500 text-white font-semibold rounded-lg hover:bg-accent-600 transition-all duration-200 shadow-lg hover:shadow-xl"
+                className="w-full sm:w-auto px-8 py-4 bg-accent-500 text-white font-semibold rounded-lg hover:bg-accent-600 transition-all duration-200 shadow-lg hover:shadow-xl"
               >
                 Start Learning
               </button>
