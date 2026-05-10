@@ -20,7 +20,7 @@ router.get('/google/callback',
       { 
         id: req.user.id,
         email: req.user.email,
-        name: req.user.name
+        name: req.user.name || req.user.displayName || req.user.email?.split('@')[0] || 'Learner'
       },
       process.env.JWT_SECRET,
       { expiresIn: '7d' }
