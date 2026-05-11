@@ -1,5 +1,6 @@
 const Anthropic = require('@anthropic-ai/sdk');
 const mongoose = require('mongoose');
+const logger = require('../utils/logger');
 
 const anthropic = new Anthropic({
   apiKey: process.env.ANTHROPIC_API_KEY,
@@ -78,6 +79,8 @@ Respond ONLY with the JSON object, no other text.`
     const analysis = JSON.parse(responseText);
 
     console.log('✅ Analysis complete:', analysis);
+
+    logger.usage('TOPIC_ANALYSED', { userId: req.user.id, topic });
 
     res.json(analysis);
   } catch (error) {
@@ -441,6 +444,8 @@ Respond ONLY with the JSON object.`
     });
 
     console.log('✅ Curriculum saved to database:', curriculum._id);
+
+    logger.usage('CURRICULUM_GENERATED', { userId, topic, duration });
 
     res.json({
       curriculumId: curriculum._id,

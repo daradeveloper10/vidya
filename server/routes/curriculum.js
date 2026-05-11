@@ -3,6 +3,7 @@ const router = express.Router();
 const curriculumController = require('../controllers/curriculumController');
 const { isAuthenticated } = require('../middleware/auth');
 const rateLimit = require('express-rate-limit');
+const logger = require('../utils/logger');
 
 const aiLimiter = rateLimit({
   windowMs: 60 * 60 * 1000,
@@ -10,7 +11,10 @@ const aiLimiter = rateLimit({
   standardHeaders: true,
   legacyHeaders: false,
   keyGenerator: (req) => req.user?.id || req.ips[0] || req.ip,
-  message: { error: 'You have reached the limit for AI requests. Please try again in an hour.' }
+  handler: (req, res) => {
+    logger.security('AI_RATE_LIMIT_HIT', { path: req.path, ip: req.ips[0] || req.ip, userId: req.user?.id });
+    res.status(429).json({ error: 'You have reached the limit for AI requests. Please try again in an hour.' });
+  }
 });
 
 // Analyse topic for clarity

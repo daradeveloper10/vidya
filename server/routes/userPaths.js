@@ -5,6 +5,7 @@ const UserGeneratedPath = require('../models/UserGeneratedPath');
 const Anthropic = require('@anthropic-ai/sdk');
 const rateLimit = require('express-rate-limit');
 const mongoose = require('mongoose');
+const logger = require('../utils/logger');
 
 const anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
 
@@ -14,7 +15,10 @@ const aiLimiter = rateLimit({
   standardHeaders: true,
   legacyHeaders: false,
   keyGenerator: (req) => req.user?.id || req.ips[0] || req.ip,
-  message: { error: 'You have reached the limit for AI requests. Please try again in an hour.' }
+  handler: (req, res) => {
+    logger.security('AI_RATE_LIMIT_HIT', { path: req.path, ip: req.ips[0] || req.ip, userId: req.user?.id });
+    res.status(429).json({ error: 'You have reached the limit for AI requests. Please try again in an hour.' });
+  }
 });
 
 function durationToHours(duration) {
@@ -195,6 +199,8 @@ router.post('/create', isAuthenticated, async (req, res) => {
       status: 'not_started',
       currentCurriculumIndex: 0,
     });
+
+    logger.usage('PATH_CREATED', { userId, pathName, curriculaCount: curricula.length });
 
     res.json({ pathId: userPath._id, path: userPath });
   } catch (err) {

@@ -4,6 +4,7 @@ const mongoose = require('mongoose');
 const session = require('express-session');
 const passport = require('passport');
 const cors = require('cors');
+const logger = require('./utils/logger');
 
 // Import routes
 const authRoutes = require('./routes/auth');
@@ -47,8 +48,11 @@ const generalLimiter = rateLimit({
   max: 100,
   standardHeaders: true,
   legacyHeaders: false,
-  message: { error: 'Too many requests, please try again later' },
   keyGenerator: (req) => req.user?.id || req.ips[0] || req.ip,
+  handler: (req, res) => {
+    logger.security('RATE_LIMIT_HIT', { path: req.path, ip: req.ips[0] || req.ip, userId: req.user?.id });
+    res.status(429).json({ error: 'Too many requests, please try again later' });
+  }
 });
 
 app.use('/api', generalLimiter);
@@ -147,6 +151,14 @@ app.get('/health', (req, res) => {
 // Error handling middleware
 app.use((err, req, res, next) => {
   console.error('🔴 Server error:', err.stack);
+  
+  logger.error('UNHANDLED_ERROR', {
+    message: err.message,
+    path: req.path,
+    method: req.method,
+    userId: req.user?.id,
+    ip: req.ip,
+  });
   
   // In production, don't expose error details
   const isProduction = process.env.NODE_ENV === 'production';

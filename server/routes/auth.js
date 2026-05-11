@@ -2,6 +2,7 @@ const express = require('express');
 const passport = require('passport');
 const jwt = require('jsonwebtoken');
 const router = express.Router();
+const logger = require('../utils/logger');
 
 // Google OAuth routes
 router.get('/google',
@@ -11,13 +12,19 @@ router.get('/google',
 );
 
 router.get('/google/callback',
-  passport.authenticate('google', { 
-    failureRedirect: `${process.env.FRONTEND_URL}/login?error=auth_failed`,
-    session: false
-  }),
+  (req, res, next) => {
+    passport.authenticate('google', { session: false }, (err, user) => {
+      if (err || !user) {
+        logger.auth('LOGIN_FAILED', { error: err?.message || 'No user returned', ip: req.ip });
+        return res.redirect(`${process.env.FRONTEND_URL}/login?error=auth_failed`);
+      }
+      req.user = user;
+      next();
+    })(req, res, next);
+  },
   (req, res) => {
     const token = jwt.sign(
-      { 
+      {
         id: req.user.id,
         email: req.user.email,
         name: req.user.name || req.user.displayName || req.user.email?.split('@')[0] || 'Learner'
@@ -25,6 +32,7 @@ router.get('/google/callback',
       process.env.JWT_SECRET,
       { expiresIn: '7d' }
     );
+    logger.auth('LOGIN_SUCCESS', { userId: req.user.id });
     res.redirect(`${process.env.FRONTEND_URL}/auth/callback?token=${token}`);
   }
 );
@@ -58,6 +66,7 @@ router.get('/me', async (req, res) => {
       }
     });
   } catch (error) {
+    logger.security('INVALID_TOKEN', { ip: req.ip, path: req.path });
     res.status(401).json({ error: 'Invalid token' });
   }
 });
