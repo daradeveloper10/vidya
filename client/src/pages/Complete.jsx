@@ -201,7 +201,7 @@ function Complete() {
                 You've just completed <span className="text-white font-semibold">{curriculum?.topic}</span>. Want to build on this and turn it into a full learning path?
               </p>
               <p className="text-primary-300 font-body text-sm">
-                Claude will suggest related topics to take your knowledge further.
+                We'll suggest related topics to take your knowledge further.
               </p>
             </div>
             <div className="flex gap-3 flex-wrap">

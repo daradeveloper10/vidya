@@ -196,7 +196,7 @@ function Learn() {
               <div className="space-y-2">
                 <p className="text-accent-400 font-heading font-bold text-lg">Turn this into a learning path?</p>
                 <p className="text-primary-200 font-body">
-                  Claude can suggest follow-on topics to build on <span className="text-white font-semibold">{toTitleCase(topic)}</span> and create a structured learning journey.
+                  We'll suggest follow-on topics to build on <span className="text-white font-semibold">{toTitleCase(topic)}</span> and create a structured learning journey.
                 </p>
               </div>
               <div className="flex gap-3 flex-wrap">

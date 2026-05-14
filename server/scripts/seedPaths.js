@@ -25,7 +25,7 @@ const paths = [
       { title: 'Machine Learning Basics', topic: 'Machine Learning Fundamentals', description: 'Understand how machines learn from data without being explicitly programmed.', estimatedTime: '2hrs', order: 0 },
       { title: 'Neural Networks Explained', topic: 'Neural Networks', description: 'Demystify deep learning and understand how neural networks are structured.', estimatedTime: '2hrs', order: 1 },
       { title: 'AI Ethics and Society', topic: 'AI Ethics', description: 'Explore the moral and societal implications of artificial intelligence.', estimatedTime: '2hrs', order: 2 },
-      { title: 'Large Language Models', topic: 'Large Language Models', description: 'Understand how GPT, Claude and other LLMs work and how to use them well.', estimatedTime: '2hrs', order: 3 },
+      { title: 'Large Language Models', topic: 'Large Language Models', description: 'Understand how GPT and other LLMs work and how to use them well.', estimatedTime: '2hrs', order: 3 },
       { title: 'AI in the Workplace', topic: 'AI Productivity and Work', description: 'Learn how to leverage AI tools to dramatically increase your productivity.', estimatedTime: '2hrs', order: 4 },
     ]
   },
