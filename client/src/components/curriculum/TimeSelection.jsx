@@ -4,6 +4,7 @@ function TimeSelection({ onSelect }) {
     { value: '10min', label: '10 minutes', description: 'The mental model explained' },
     { value: '30min', label: '30 minutes', description: 'Foundation with a real example' },
     { value: '2hrs', label: '2 hours', description: 'Solid working knowledge' },
+    { value: '5hrs', label: '5 hours', description: 'Practical competency' },
     { value: '10hrs', label: '10 hours', description: 'Real competency you can use' },
     { value: '20hrs', label: '20 hours', description: 'Deep proficiency' },
     { value: '30hrs', label: '30 hours', description: 'Near-expertise level' }
