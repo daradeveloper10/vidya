@@ -49,7 +49,7 @@ function Learn() {
 
   const generateCurriculum = async () => {
     try {
-      const { topic: currTopic, duration: currDuration, clarificationAnswers } = location.state;
+      const { topic: currTopic, duration: currDuration, clarificationAnswers, pathData: currPathData, topicType: currTopicType } = location.state;
 
       const response = await api.post('/api/curriculum/generate', {
         topic: currTopic,
@@ -58,7 +58,21 @@ function Learn() {
       });
 
       const curriculumData = response.data;
-      navigate(`/curriculum/${curriculumData.curriculumId}`);
+      
+      const DURATIONS_WITH_PATH_OFFER = ['5hrs', '10hrs', '20hrs'];
+      if (DURATIONS_WITH_PATH_OFFER.includes(currDuration) && currTopicType !== 'concept' && !currPathData) {
+        navigate(`/curriculum/${curriculumData.curriculumId}`, {
+          state: {
+            showPathPrompt: true,
+            topic: currTopic,
+            duration: currDuration,
+            clarificationAnswers: clarificationAnswers || [],
+            topicType: currTopicType,
+          }
+        });
+      } else {
+        navigate(`/curriculum/${curriculumData.curriculumId}`);
+      }
 
     } catch (error) {
       navigate('/');

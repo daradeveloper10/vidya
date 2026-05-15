@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import AppHeader from '../components/ui/AppHeader';
+import PathBuilder from '../components/curriculum/PathBuilder';
 import api from '../services/api';
 
 function CurriculumDetail() {
@@ -15,6 +16,10 @@ function CurriculumDetail() {
   const [moduleOutcomes, setModuleOutcomes] = useState({});
   const [loadingOutcomes, setLoadingOutcomes] = useState({});
   const [expandedMobileModule, setExpandedMobileModule] = useState(null);
+  const [showPathPrompt, setShowPathPrompt] = useState(false);
+  const [pathBuilderVisible, setPathBuilderVisible] = useState(false);
+  const [pathConfirmationData, setPathConfirmationData] = useState(null);
+  const [confirmingPath, setConfirmingPath] = useState(false);
 
   useEffect(() => {
     if (!isAuthenticated) {
@@ -28,6 +33,12 @@ function CurriculumDetail() {
     if (!curriculum) return;
     fetchOutcomes(selectedModuleIndex);
   }, [selectedModuleIndex, curriculum]);
+
+  useEffect(() => {
+    if (location.state?.showPathPrompt) {
+      setShowPathPrompt(true);
+    }
+  }, []);
 
   const fetchCurriculum = async () => {
     try {
@@ -77,6 +88,45 @@ function CurriculumDetail() {
 
   const handleModuleClick = (moduleIndex) => {
     navigate(`/module/${curriculumId}/${moduleIndex}`);
+  };
+
+  const handlePathConfirm = async (pathData) => {
+    setConfirmingPath(true);
+    try {
+      const pathResponse = await api.post('/api/user-paths/create', {
+        pathName: pathData.pathName,
+        pathDescription: pathData.pathDescription,
+        curricula: pathData.curricula,
+      });
+      const newPathId = pathResponse.data.pathId;
+      await api.post(`/api/user-paths/${newPathId}/add-curriculum`, {
+        curriculumId,
+        order: 0,
+      });
+      const remainingCurricula = pathData.curricula.slice(1);
+      for (let i = 0; i < remainingCurricula.length; i++) {
+        try {
+          const c = remainingCurricula[i];
+          const genResponse = await api.post('/api/curriculum/generate', {
+            topic: c.topic,
+            duration: c.duration,
+            clarificationAnswers: [],
+          });
+          if (genResponse.data.curriculumId) {
+            await api.post(`/api/user-paths/${newPathId}/add-curriculum`, {
+              curriculumId: genResponse.data.curriculumId,
+              order: i + 1,
+            });
+          }
+        } catch (err) {
+          console.error(`Error generating curriculum ${i + 1}:`, err.message);
+        }
+      }
+      navigate(`/my-path/${newPathId}`);
+    } catch (err) {
+      console.error('Error confirming path:', err.message);
+      setConfirmingPath(false);
+    }
   };
 
   const calculateProgress = () => {
@@ -428,6 +478,58 @@ function CurriculumDetail() {
 
           </main>
         </div>
+
+        {/* Path prompt UI blocks */}
+        {showPathPrompt && !pathBuilderVisible && !pathConfirmationData && (
+          <div className="mt-6 p-6 bg-accent-500/10 border border-accent-500/30 rounded-xl space-y-4">
+            <div className="space-y-2">
+              <p className="text-accent-400 font-heading font-bold text-lg">Turn this into a learning path?</p>
+              <p className="text-primary-200 font-body">We'll suggest follow-on topics to build on <span className="text-white font-semibold">{location.state?.topic}</span> and create a structured learning journey.</p>
+            </div>
+            <div className="flex gap-3 flex-wrap">
+              <button onClick={() => setPathBuilderVisible(true)} className="px-6 py-3 bg-accent-500 text-white font-semibold rounded-lg hover:bg-accent-600 transition-colors font-body">Build a Learning Path →</button>
+              <button onClick={() => setShowPathPrompt(false)} className="px-6 py-3 text-primary-300 hover:text-white transition-colors font-body">No thanks, just this curriculum</button>
+            </div>
+          </div>
+        )}
+
+        {pathBuilderVisible && location.state && (
+          <PathBuilder
+            topic={location.state.topic}
+            duration={location.state.duration}
+            clarificationAnswers={location.state.clarificationAnswers || []}
+            topicType={location.state.topicType || 'skill'}
+            onConfirm={(data) => { setPathConfirmationData(data); setPathBuilderVisible(false); }}
+            onSkip={() => { setPathBuilderVisible(false); setShowPathPrompt(false); }}
+          />
+        )}
+
+        {pathConfirmationData && (
+          <div className="mt-6 space-y-4">
+            <div className="bg-accent-500/10 border border-accent-500/30 rounded-xl p-6 space-y-4">
+              <p className="text-primary-400 font-body text-sm uppercase tracking-wide">Path Name</p>
+              <p className="text-white font-heading font-bold text-2xl">{pathConfirmationData.pathName}</p>
+              {pathConfirmationData.pathDescription && <p className="text-primary-300 font-body text-sm">{pathConfirmationData.pathDescription}</p>}
+              <div className="pt-3 border-t border-accent-500/20 space-y-2">
+                {pathConfirmationData.curricula?.map((c, i) => (
+                  <div key={i} className="flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <div className={`w-5 h-5 rounded-full flex items-center justify-center text-xs font-bold flex-shrink-0 ${c.locked ? 'bg-accent-500 text-white' : 'bg-primary-700 text-primary-300'}`}>{c.locked ? '★' : i + 1}</div>
+                      <p className="text-primary-200 font-body text-sm">{c.title || c.topic}</p>
+                    </div>
+                    <p className="text-primary-400 font-body text-sm ml-4">{c.duration}</p>
+                  </div>
+                ))}
+              </div>
+            </div>
+            <button onClick={() => handlePathConfirm(pathConfirmationData)} disabled={confirmingPath} className="w-full px-8 py-4 bg-accent-500 text-white font-semibold rounded-lg hover:bg-accent-600 transition-all font-body text-lg disabled:opacity-70">
+              {confirmingPath ? <span className="flex items-center justify-center gap-3"><div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white"></div>Building your path...</span> : 'Confirm & Start Learning →'}
+            </button>
+            <button onClick={() => { setPathConfirmationData(null); setPathBuilderVisible(true); }} className="w-full px-8 py-4 bg-white/5 border border-primary-700 text-primary-200 font-body rounded-lg hover:bg-white/10 transition-colors">← Edit path</button>
+            <button onClick={() => { setPathConfirmationData(null); setShowPathPrompt(false); }} className="w-full px-4 py-2 text-primary-400 hover:text-white transition-colors font-body text-sm text-center">← Skip path, just this curriculum</button>
+          </div>
+        )}
+
       </div>
 
       {/* Sticky bottom CTA — mobile only */}
